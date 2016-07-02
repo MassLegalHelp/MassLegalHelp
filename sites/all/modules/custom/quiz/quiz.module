@@ -1,0 +1,8 @@
+<?php
+function masslegalhelp_preprocess_views_view(&$vars) {
+  $view = &$vars['view']; 
+  // Make sure it's the correct view  
+  if ($view->name == 'quiz' || $view->name == 'article_view'  || $view->name == 'basic_page_view' ) {
+  	drupal_add_js(drupal_get_path('module', 'quiz') . '/quiz.js'); 
+  }  
+}

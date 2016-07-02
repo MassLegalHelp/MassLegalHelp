@@ -1,0 +1,108 @@
+<?php
+
+/**
+ * @file
+ * Contains installation functions for the File Aliases module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function file_aliases_install() {
+  // Adjust module weight.
+  db_update('system')
+    ->fields(array('weight' => 1))
+    ->condition('name', 'file_aliases')
+    ->execute();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function file_aliases_uninstall() {
+  db_delete('url_alias')
+    ->condition('source', db_like('file_aliases/') . '%', 'LIKE')
+    ->execute();
+}
+
+/**
+ * Update database schema and URL alias format.
+ */
+function file_aliases_update_7100() {
+  // Update/Add the alias field in the file_managed table.
+  if (!db_field_exists('file_managed', 'alias')) {
+    if (db_field_exists('file_managed', 'filealias')) {
+      db_change_field('file_managed', 'filealias', 'alias', array(
+        'description' => 'Alias path to file. Used by the file_aliases module.',
+        'type'        => 'varchar',
+        'length'      => '255',
+        'not null'    => FALSE,
+        'default'     => '',
+      ));
+    }
+    else {
+      db_add_field('file_managed', 'alias', array(
+        'description' => 'Alias path to file. Used by the file_aliases module.',
+        'type'        => 'varchar',
+        'length'      => '255',
+        'not null'    => FALSE,
+        'default'     => '',
+      ));
+    }
+  }
+
+  // Get all existing URL aliases.
+  $results = db_select('url_alias', 'u')
+    ->fields('u', array('source', 'alias'))
+    ->condition('source', db_like('filefield_paths/alias/') . '%', 'LIKE')
+    ->execute()
+    ->fetchAllKeyed();
+
+  // Update existing URL aliases source path.
+  db_update('url_alias')
+    ->expression('source', 'replace(source, :haystack, :needle)', array(
+      ':haystack' => 'filefield_paths/alias/',
+      ':needle'   => 'file_aliases/'
+    ))
+    ->execute();
+
+  // Build a list of all files with aliases based on the URL aliases.
+  $fids = array();
+  foreach ($results as $source => $alias) {
+    $fid = drupal_substr($source, 22);
+    $fids[$fid] = $alias;
+  }
+  if (!empty($fids)) {
+    $results = db_select('file_managed', 'f')->fields('f', array(
+      'fid',
+      'alias'
+    ))->condition('fid', array_keys($fids))->execute()->fetchAllKeyed();
+
+    // Ensure correct alias is set on all applicable files.
+    foreach ($results as $fid => $alias) {
+      if ($alias !== $fids[$fid]) {
+        db_update('file_managed')
+          ->fields(array('alias' => $fids[$fid]))
+          ->condition('fid', $fid)
+          ->execute();
+      }
+    }
+
+    // Remove old URL aliases.
+    $unused_fids = array_diff(array_keys($fids), array_keys($results));
+    foreach ($unused_fids as $fid) {
+      db_delete('url_alias')
+        ->condition('source', "file_aliases/{$fid}")
+        ->execute();
+    }
+  }
+}
+
+/**
+ * Remove 'alias' column from 'file_managed' table.
+ */
+function file_aliases_update_7101() {
+  if (db_field_exists('file_managed', 'alias')) {
+    db_drop_field('file_managed', 'alias');
+  }
+}

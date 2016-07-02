@@ -1,0 +1,15 @@
+<?php
+/**
+ * @file
+ * Views Menu Area module's implementation.
+ */
+
+/**
+ * Implements hook_views_api().
+ */
+function views_menuarea_views_api() {
+  return array(
+    'api' => '3.0-alpha1',
+    'path' => drupal_get_path('module', 'views_menuarea'),
+  );
+}

@@ -1,0 +1,499 @@
+<?php
+
+function language_links_block_info() {
+  $blocks['language_links'] = array(
+      'info' => t('Language links'),
+      'cache' => DRUPAL_NO_CACHE,
+  );
+  return $blocks;
+}
+
+function language_links_block_view($delta = '') {
+
+  $block = array();
+  switch ($delta) {
+    case 'language_links':
+      $block['subject'] = t('Translation Links');
+      $block['content'] = __language_links_get();
+      break;
+  }
+  return $block;
+}
+
+function language_links_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'webform_client_form_29382') {
+    $form['submitted']['page_you_are_mailing']['#default_value'] = $_SERVER['HTTP_REFERER'];
+  }
+  
+  if($form_id == 'field_collection_item_delete_confirm'){
+      array_unshift($form['#submit'], 'delete_file_obj');
+  }
+  if ($form_id == 'field_collection_item_form') {
+      
+    if (is_numeric($form['#entity']->item_id)) {
+      global $language;
+      $query = db_select('field_data_field_attached_file', 'af');
+      $query->join('url_alias', 'ul', 'af.field_attached_file_fid = substr(ul.source,14)');
+      $query->condition('af.entity_id', $form['#entity']->item_id, '=');
+      $query->fields('ul', array('alias'));
+      $result = $query->execute();
+      $record = $result->fetchAssoc();
+      
+      $form['field_file_alias_url'][$language->language][0]['value']['#default_value'] = $record;
+    }
+  }
+  if ($form_id == 'page_node_form' && isset($form['nid']['#value'])) {
+     global $language;
+    foreach ($form['field_attaches_file'][$language->language] as $delta => $field) {
+      
+      if (is_numeric($delta)) {
+        
+        $query = db_select('field_data_field_attached_file', 'af');
+        $query->join('url_alias', 'ul', 'af.field_attached_file_fid = substr(ul.source,14)');
+        $query->condition('af.entity_id', $form['field_attaches_file'][$language->language][$delta]['#entity']->item_id, '=');
+        $query->fields('ul', array('alias'));
+        $result = $query->execute();
+        $record = $result->fetchAssoc();
+        
+        if ($record) {
+          $form['field_attaches_file'][$language->language][$delta]['field_file_alias_url'][$language->language][0]['value']['#default_value'] = $record;
+        }
+      }
+    }
+  }
+  if ($form_id == 'page_node_form' && isset($_GET['parent']) && !empty($_GET['parent'])) {
+    $form['menu']['enabled']['#default_value'] = 1;
+    $form['menu']['link']['parent']['#default_value'] = $_GET['parent'];
+  }
+}
+
+function delete_file_obj($form,&$form_state){
+    global $language;
+    $fileObj = file_load($form_state['field_collection_item']->field_attached_file[$language->language][0]['fid']);
+    file_delete($fileObj,true);
+}
+
+function language_links_preprocess_print(&$variables) {
+  global $language;
+  $node = $variables['node'];
+  $format = $variables['format'];
+  $path = drupal_get_path_alias(empty($node->nid) ? $node->path : "node/$node->nid");
+  static $hooks = NULL;
+  if (!isset($hooks)) {
+    drupal_theme_initialize();
+    $hooks = theme_get_registry();
+  }
+  $variables['page']['#show_messages'] = FALSE;
+  // Stolen from theme() so that ALL preprocess functions are called
+  $hook = 'page';
+  $info = $hooks[$hook];
+  if (isset($info['preprocess functions']) || isset($info['process functions'])) {
+    $variables['theme_hook_suggestions'] = array();
+    foreach (array('preprocess functions', 'process functions') as $phase) {
+      if (!empty($info[$phase])) {
+        foreach ($info[$phase] as $processor_function) {
+          if (function_exists($processor_function)) {
+            // We don't want a poorly behaved process function changing $hook.
+            $hook_clone = $hook;
+            $processor_function($variables, $hook_clone);
+          }
+        }
+      }
+    }
+  }
+
+  $logo_url = FALSE;
+  switch (variable_get('print_logo_options', PRINT_LOGO_OPTIONS_DEFAULT)) {
+    case 1: // theme's
+      $logo_url = theme_get_setting('logo');
+      break;
+    case 2: // user-specifed
+      $logo_url = strip_tags(variable_get('print_logo_url', PRINT_LOGO_URL_DEFAULT));
+      break;
+  }
+  $logo_url = preg_replace('!^' . base_path() . '!', '', $logo_url);
+
+  $variables['print_logo'] = $logo_url ? theme('image', array('path' => $logo_url, 'alt' => variable_get('site_name', 'Drupal'), 'attributes' => array('class' => 'print-logo', 'id' => 'logo'))) : NULL;
+
+  $variables['print_node'] = $node;
+  $variables['content'] = $node->content;
+  $variables['scripts'] = drupal_get_js();
+  $variables['footer_scripts'] = drupal_get_js('footer');
+  $variables['sourceurl_enabled'] = variable_get('print_sourceurl_enabled', PRINT_SOURCEURL_ENABLED_DEFAULT);
+  $variables['url'] = url($path, array('absolute' => TRUE, 'query' => $variables['query']));
+  $variables['source_url'] = url(variable_get('print_sourceurl_forcenode', PRINT_SOURCEURL_FORCENODE_DEFAULT) ? drupal_get_normal_path($path) : $path, array('alias' => TRUE, 'absolute' => TRUE, 'query' => $variables['query']));
+  $variables['cid'] = isset($node->cid) ? $node->cid : NULL;
+  $variables['print_title'] = check_plain($node->title);
+  $variables['head'] = drupal_get_html_head();
+  $variables['robots_meta'] = _print_robots_meta_generator();
+  $variables['css'] = _print_css_generator($variables['expand_css']);
+
+  if (variable_get('print_html_sendtoprinter', PRINT_HTML_SENDTOPRINTER_DEFAULT) && ($format == 'html')) {
+    drupal_add_js('misc/drupal.js', array('weight' => JS_LIBRARY));
+
+    $window_close = (variable_get('print_html_new_window', PRINT_HTML_NEW_WINDOW_DEFAULT) && variable_get('print_html_windowclose', PRINT_HTML_WINDOWCLOSE_DEFAULT)) ? 'setTimeout(function(){window.close();}, 1);' : '';
+    $variables['sendtoprinter'] = '<script type="text/javascript">(function ($) { Drupal.behaviors.print = {attach: function(context) {$(window).load(function() {window.print();})}}})(jQuery);</script>';
+  }
+
+  $type = (isset($node->type)) ? $node->type : '';
+  $nid = (isset($node->nid)) ? $node->nid : '';
+
+  $variables['theme_hook_suggestions'] = array();
+  $variables['theme_hook_suggestions'][] = "print__node__{$type}";
+  $variables['theme_hook_suggestions'][] = "print__node__{$type}__{$nid}";
+  $variables['theme_hook_suggestions'][] = "print__{$format}";
+  $variables['theme_hook_suggestions'][] = "print__{$format}__node__{$type}";
+  $variables['theme_hook_suggestions'][] = "print__{$format}__node__{$type}__{$nid}";
+}
+
+function __language_links_get() {
+  if (arg(0) == 'node' && is_numeric(arg(1))) {
+    $nid = arg(1);
+    global $base_url;
+    global $language;
+    $languages = language_list();
+    $node = menu_get_object();
+    $linksArr = array();
+    $query = db_query("select ua1.* from url_alias ua left join url_alias ua1 on ua.alias = ua1.alias where ua.source= 'node/" . $node->nid . "' GROUP BY ua1.source");
+    foreach ($query as $row) {
+      if ($language->language != $row->language) {
+        if ($row->language == 'en' || $row->language == 'und') {
+          $menu_language = '/';
+        }
+        if ($row->language == 'pt') {
+          $menu_language = '/portuguese/';
+        }
+        if ($row->language == 'vi') {
+          $menu_language = '/vietnamese/';
+        }
+        if ($row->language == 'es') {
+          $menu_language = '/spanish/';
+        }
+        if ($row->language == 'ru') {
+          $menu_language = '/russian/';
+        }
+        if ($row->language == 'ht') {
+          $menu_language = '/haitian-creole/';
+        }
+        if ($row->language == 'zh-hant') {
+          $menu_language = '/chinese-tr/';
+        }
+        if ($row->language == 'zh-hans') {
+          $menu_language = '/chinese-simplified/';
+        }
+        if ($row->language != 'und') {
+          $linksArr[] = array(
+              'href' => $base_url . $menu_language . $row->alias,
+              'title' => $languages[$row->language]->native,
+          );
+        }
+      }
+    }
+    return theme('links', array(
+        'links' => $linksArr,
+        'attributes' => array('class' => array('links', 'inline')),
+    ));
+  }
+}
+
+function language_links_print_url_list_alter(&$url) {
+  global $base_url;
+  $image_link_raw = $url;
+  $b = parse_url($base_url);
+  $p = parse_url($image_link_raw);
+
+  $mlid = array();
+  
+  $query = db_select('url_alias', 'ua');
+  $query->join('menu_links', 'ml', 'ua.source = ml.link_path');
+  $query->condition('ua.alias', ltrim($p['path'], "/"));
+  $query->fields('ml', array('link_title'));
+  $link_title = $query->execute()->fetchField();
+
+  if ($b['host'] != $p['host']) {
+    $url = $link_title . " => " . $url . "\r\n";
+  } else {
+    $url = '';
+  }
+}
+
+function getLinks($link) {
+  global $base_url;
+  $b = parse_url($base_url);
+  /*   * * return array ** */
+  $ret = array();
+
+  /*   * * a new dom object ** */
+  $dom = new domDocument;
+
+  /*   * * get the HTML (suppress errors) ** */
+  @$dom->loadHTML($link);
+
+  /*   * * remove silly white space ** */
+  $dom->preserveWhiteSpace = false;
+
+  /*   * * get the links from the HTML ** */
+  $links = $dom->getElementsByTagName('a');
+
+  /*   * * loop over the links ** */
+  if ($links) {
+    foreach ($links as $tag) {
+      if (!is_numeric($tag->childNodes->item(0)->nodeValue)) {
+        $a = parse_url($tag->getAttribute('href'));
+        if ($b['host'] != $a['host']) {
+          $ret[$tag->getAttribute('href')] = $tag->childNodes->item(0)->nodeValue;
+        }
+      }
+    }
+  }
+
+  return $ret;
+}
+
+function language_links_menu() {
+  $items = array();
+
+  $items['tell-a-friend-thank-you/%/%'] = array(
+      'title' => t('Tell a friend thank you'),
+      'page callback' => "tell_a_friend_thank_you",
+      'access callback' => TRUE,
+      'page arguments' => array(1, 2),
+      'type' => MENU_CALLBACK
+  );
+  $items['contact-us-thank-you/%/%'] = array(
+      'title' => t('Contact us thank you'),
+      'page callback' => "contact_us_thank_you",
+      'access callback' => TRUE,
+      'page arguments' => array(1, 2),
+      'type' => MENU_CALLBACK
+  );
+
+  return $items;
+}
+
+function contact_us_thank_you($nid, $sid){
+    module_load_include("inc", "webform", "includes/webform.submissions");
+    $submission = webform_get_submission($nid, $sid);
+    //dsm($submission);
+    
+    global $language;
+  if ($language->language == 'en' || $language->language == 'und') {
+    $menu_language = '';
+    $new_language = "English";
+  }if ($language->language == 'pt') {
+    $menu_language = '/portuguese/';
+    $new_language = "Português";
+  }if ($language->language == 'vi') {
+    $menu_language = '/vietnamese/';
+    $new_language = "Tiếng Việt";
+  }if ($language->language == 'es') {
+    $menu_language = '/spanish/';
+    $new_language = "en español";
+  }if ($language->language == 'ru') {
+    $menu_language = '/russian/';
+    $new_language = "На русском языке";
+  }if ($language->language == 'ht') {
+    $menu_language = '/haitian-creole/';
+    $new_language = "Kreyòl Ayisyen";
+  }if ($language->language == 'zh-hant') {
+    $menu_language = '/chinese-tr/';
+    $new_language = "繁體中文";
+  }if ($language->language == 'zh-hans') {
+    $menu_language = '/chinese-simplified/';
+    $new_language = "繁體中文";
+  }
+    
+    $page_detail = "<div class=\"mail-submit-wrapper\">
+                    <div class=\"breadcrumb\">
+ <span class=\"inline odd first\">
+  <a href=\"/home\">" . $new_language . "</a>
+ </span>
+ <span class=\"delimiter\">»</span>
+ <span class=\"inline even\">
+  <a href=" . $menu_language . "about-us\>" . t("About us") . "</a>
+ </span>
+ <span class=\"delimiter\">»</span>
+ <span class=\"inline odd last\">" . t("Contact us") . "</span>
+</div><div class=\"mail-thanks\">";
+
+  $page_detail .= t("Thanks for telling us what you think about MasslegalHelp!") . "</div>";
+  $page_detail .= "<h2>" . t("You have just sent this webpage:") . "</h2>";
+  $page_detail .= "<p><a href=" . $menu_language . $submission->data[7][0] . ">" . $submission->data[7][0] . "</a></p>";
+  $page_detail .= "<div class=\"mail-submit-message\"><h2>" . t("Your message") . ":</h2>";
+  $page_detail .= "<p>" . $submission->data[6][0] . "</p></div></div>";
+  $page_detail .= "<p><a href=" . $menu_language . $submission->data[7][0] . ">" . t("go back") . "</a></p></div>";
+
+  
+  return $page_detail;
+
+}
+
+function tell_a_friend_thank_you($nid, $sid) {
+  module_load_include("inc", "webform", "includes/webform.submissions");
+  $submission = webform_get_submission($nid, $sid);
+  global $language;
+  if ($language->language == 'en' || $language->language == 'und') {
+    $menu_language = '/';
+    $new_language = "English";
+  }if ($language->language == 'pt') {
+    $menu_language = '/portuguese/';
+    $new_language = "Português";
+  }if ($language->language == 'vi') {
+    $menu_language = '/vietnamese/';
+    $new_language = "Tiếng Việt";
+  }if ($language->language == 'es') {
+    $menu_language = '/spanish/';
+    $new_language = "en español";
+  }if ($language->language == 'ru') {
+    $menu_language = '/russian/';
+    $new_language = "На русском языке";
+  }if ($language->language == 'ht') {
+    $menu_language = '/haitian-creole/';
+    $new_language = "Kreyòl Ayisyen";
+  }if ($language->language == 'zh-hant') {
+    $menu_language = '/chinese-tr/';
+    $new_language = "繁體中文";
+  }if ($language->language == 'zh-hans') {
+    $menu_language = '/chinese-simplified/';
+    $new_language = "繁體中文";
+  }
+
+  $page_detail = "<div class=\"mail-submit-wrapper\">
+                    <div class=\"breadcrumb\">
+ <span class=\"inline odd first\">
+  <a href=\"/home\">" . $new_language . "</a>
+ </span>
+ <span class=\"delimiter\">»</span>
+ <span class=\"inline even\">
+  <a href=" . $menu_language . "about-us\>" . t("About us") . "</a>
+ </span>
+ <span class=\"delimiter\">»</span>
+ <span class=\"inline odd last\">" . t("Tell a Friend") . "</span>
+</div><div class=\"mail-thanks\">";
+
+  $page_detail .= t("Thanks for telling a friend about MasslegalHelp!") . "</div>";
+  $page_detail .= "<h2>" . t("You have just sent this webpage:") . "</h2>";
+  $page_detail .= "<p><a href=" . $menu_language . $submission->data[9][0] . ">" . $submission->data[8][0] . "</a></p>";
+  $page_detail .= "<div class=\"mail-submit\">
+  <div class=\"mail-submit-to\">" . t("To") . ":" . $submission->data[2][0] . "</div>";
+  $page_detail .= "<div class=\"mail-submit-message\"><h2>" . t("Your message") . ":</h2>";
+  $page_detail .= "<p>" . $submission->data[7][0] . "</p></div></div>";
+  $page_detail .= "<p><a href=" . $menu_language . $submission->data[9][0] . ">" . t("go back") . "</a></p></div>";
+
+  //return print_r($submission,1);
+  return $page_detail;
+}
+
+function get_menu_level() {
+  global $language;
+  if ($language->language == 'en') {
+    $menu_item = 'main-menu';
+  }
+  if ($language->language == 'pt') {
+    $menu_item = 'menu-portuguese';
+  }
+  if ($language->language == 'vi') {
+    $menu_item = 'menu-vietnamese';
+  }
+  if ($language->language == 'es') {
+    $menu_item = 'menu-spanish';
+  }
+  if ($language->language == 'ru') {
+    $menu_item = 'menu-russian';
+  }
+  if ($language->language == 'ht') {
+    $menu_item = 'menu--haitian-creole';
+  }
+  if ($language->language == 'zh-hant') {
+    $menu_item = 'menu-chinese-traditional';
+  }
+  if ($language->language == 'zh-hans') {
+    $menu_item = 'menu-chinese-simplified';
+  }
+  $menu_item = 'main-menu';
+
+  $tree = menu_tree_page_data($menu_item);
+  $level = 0;
+  // Go down the active trail as far as possible.
+  while ($tree) {
+    // Loop through the current level's items until we find one that is in trail.
+    while ($item = array_shift($tree)) {
+      if ($item['link']['in_active_trail']) {
+        // If the item is in the active trail, we count a new level.
+        $level++;
+        if (!empty($item['below'])) {
+          // If more items are available, we continue down the tree.
+          $tree = $item['below'];
+          break;
+        }
+        // If we are at the end of the tree, our work here is done.
+        break 2;
+      }
+    }
+  }
+// Then, add body classes or other theme variables as needed:
+  if ($level == 3) {
+    $var = TRUE;
+  } else {
+    $var = FALSE;
+  }
+  return $var;
+}
+
+function get_last_menu_level() {
+  global $language;
+  if ($language->language == 'en') {
+    $menu_item = 'main-menu';
+  }
+  if ($language->language == 'pt') {
+    $menu_item = 'menu-portuguese';
+  }
+  if ($language->language == 'vi') {
+    $menu_item = 'menu-vietnamese';
+  }
+  if ($language->language == 'es') {
+    $menu_item = 'menu-spanish';
+  }
+  if ($language->language == 'ru') {
+    $menu_item = 'menu-russian';
+  }
+  if ($language->language == 'ht') {
+    $menu_item = 'menu--haitian-creole';
+  }
+  if ($language->language == 'zh-hant') {
+    $menu_item = 'menu-chinese-traditional';
+  }
+  if ($language->language == 'zh-hans') {
+    $menu_item = 'menu-chinese-simplified';
+  }
+  $menu_item = 'main-menu';
+  $tree = menu_tree_page_data($menu_item);
+  $var = 0;
+  // Go down the active trail as far as possible.
+  while ($tree) {
+    // Loop through the current level's items until we find one that is in trail.
+    while ($item = array_shift($tree)) {
+      if ($item['link']['in_active_trail']) {
+        // If the item is in the active trail, we count a new level.
+        if (!empty($item['below'])) {
+          // If more items are available, we continue down the tree.
+          $tree = $item['below'];
+
+          break;
+        }
+        // If we are at the end of the tree, our work here is done.
+        $var = 0;
+        break 2;
+      } else {
+        $var = 1;
+      }
+    }
+  }
+// Then, add body classes or other theme variables as needed:
+  if ($var == 0) {
+    $newvar = TRUE;
+  } else {
+    $newvar = FALSE;
+  }
+  return $newvar;
+}

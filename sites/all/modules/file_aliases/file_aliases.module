@@ -1,0 +1,185 @@
+<?php
+/**
+ * @file
+ * Contains core functions for the File Aliases module.
+ */
+
+/**
+ * Include additional files.
+ */
+$dirname = dirname(__FILE__) . "/modules";
+$includes = file_scan_directory($dirname, '/.inc$/');
+foreach (module_list() as $module) {
+  if (isset($includes[$file = "{$dirname}/{$module}.inc"])) {
+    require_once $file;
+  }
+}
+
+/**
+ * Implements hook_menu().
+ *
+ * @return mixed
+ */
+function file_aliases_menu() {
+  $items['file_aliases/%'] = array(
+    'page callback'   => 'file_aliases_load_fid',
+    'page arguments'  => array(1),
+    'access callback' => TRUE,
+    'type'            => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_preprocess_image_style().
+ *
+ * @param $variables
+ */
+function file_aliases_preprocess_image_style(&$variables) {
+  global $base_url;
+  $source = drupal_lookup_path('source', str_replace($base_url . base_path(), '', $variables['path']));
+  if ($source !== FALSE) {
+    $fid = drupal_substr($source, 13);
+    $uri = db_select('file_managed', 'f')
+      ->fields('f', array('uri'))
+      ->condition('fid', $fid)
+      ->execute()
+      ->fetchField();
+    if ($uri) {
+      $variables['path'] = $uri;
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_image().
+ *
+ * @param $variables
+ */
+function file_aliases_preprocess_image(&$variables) {
+  if (isset($variables['style_name'])) {
+    $regex = ".*?files\/styles\/{$variables['style_name']}\/(.*?)\/(.*)";
+    if (defined('IMAGE_DERIVATIVE_TOKEN')) {
+      $regex .= '\?(' . IMAGE_DERIVATIVE_TOKEN . '=\S{8})';
+    }
+    if (preg_match("/{$regex}/", $variables['path'], $matches)) {
+      $fid = db_select('file_managed', 'f')
+        ->fields('f', array('fid'))
+        ->condition('uri', "{$matches[1]}://{$matches[2]}")
+        ->execute()
+        ->fetchField();
+      if ($fid) {
+        $source = "file_aliases/{$fid}";
+        if (($alias = drupal_get_path_alias($source)) != $source) {
+          $variables['path'] = file_create_url($alias) . "?{$variables['style_name']}";
+          if (defined('IMAGE_DERIVATIVE_TOKEN')) {
+            $variables['path'] .= "&{$matches[3]}";
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_file_url_alter().
+ *
+ * @param $uri
+ */
+function file_aliases_file_url_alter(&$uri) {
+  $fid = db_select('file_managed', 'f')
+    ->fields('f', array('fid'))
+    ->condition('uri', $uri)
+    ->execute()
+    ->fetchField();
+  if ($fid) {
+    $source = "file_aliases/{$fid}";
+    if (($alias = drupal_get_path_alias($source)) != $source) {
+      $uri = file_create_url($alias);
+    }
+  }
+}
+
+/**
+ * Menu callback; File Alias callback.
+ *
+ * @param $fid
+ */
+function file_aliases_load_fid($fid) {
+  if (request_uri() == base_path() . "file_aliases/{$fid}") {
+    drupal_not_found();
+    exit;
+  }
+
+  $results = db_select('file_managed', 'f')
+    ->fields('f', array('filemime', 'uri'))
+    ->condition('fid', $fid)
+    ->execute()
+    ->fetchAll();
+  $result = current($results);
+
+  if (!$result) {
+    return;
+  }
+
+  // Render Image Style preset if applicable.
+  $uri = explode('?', request_uri());
+  if (isset($uri[1]) && strpos($result->filemime, 'image') === 0) {
+    if (defined('IMAGE_DERIVATIVE_TOKEN')) {
+      list($uri[1], ) = explode('&', $uri[1]);
+    }
+    $image_style = $uri[1];
+    $styles = image_styles();
+    if (isset($styles[$image_style])) {
+      $arguments = array_merge(array(
+        image_style_load($image_style),
+        file_uri_scheme($result->uri)
+      ), explode('/', str_replace(file_uri_scheme($result->uri) . '://', '', $result->uri)));
+      call_user_func_array('image_style_deliver', $arguments);
+    }
+  }
+
+  if (!$result || !is_object($result)) {
+    return;
+  }
+
+  elseif (file_uri_scheme($result->uri) == 'private') {
+    $file = explode('://', $result->uri);
+    file_download($file[0], $file[1]);
+  }
+
+  else {
+    header('Cache-Control: public');
+    header("Content-Type: {$result->filemime}");
+    readfile($result->uri);
+  }
+}
+
+/**
+ * Implements hook_file_download().
+ *
+ * @return array
+ */
+function file_aliases_file_download($uri) {
+  $file = drupal_realpath($uri);
+  $file_alias = drupal_get_path_alias($_GET['q']);
+  $fileinfo = pathinfo($file_alias);
+  return array(
+    'Cache-Control'       => 'public',
+    'Content-Type'        => mime_content_type($file),
+    'Content-Length'      => filesize($file),
+    'Content-Disposition' => "filename='{$fileinfo['basename']}'"
+  );
+}
+
+/**
+ * Implements hook_file_delete().
+ */
+function file_aliases_file_delete($file) {
+  $alias = "file_aliases/{$file->fid}";
+  if (drupal_get_path_alias($alias)) {
+    $path = path_load($alias);
+    path_delete($path['pid']);
+  }
+}

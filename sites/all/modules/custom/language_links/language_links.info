@@ -1,0 +1,4 @@
+name = Language Links
+description = Shows language translation links.
+core = 7.x
+package = CMS

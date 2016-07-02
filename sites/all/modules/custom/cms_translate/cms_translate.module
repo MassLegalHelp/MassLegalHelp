@@ -1,0 +1,26 @@
+<?php
+/**
+ * implements hook_views_query_alter
+ * @param type $view
+ * @param type $query
+ */
+function cms_translate_views_query_alter(&$view, &$query) {
+  global $language;
+  if ($view->name == 'article_view' && ($view->current_display == 'panel_pane_1' || $view->current_display == 'panel_pane_2')) {
+    // override the ordering
+    $query->orderby = array(
+        array(
+            'field' => 'field_data_field_article.delta',
+            'direction' => 'ASC',
+        )
+    );
+    $conditions = array();
+    $conditions[] = array('field' => 'field_data_field_article.language', 'value' => array($language->language), 'operator' => 'in');
+    $query->where[] = array('conditions' => $conditions, 'args' => array(), 'type' => 'AND');
+  }
+  if ($view->name == 'file_attches' && ($view->current_display == 'panel_pane_1')) {
+    $conditions = array();
+    $conditions[] = array('field' => 'field_data_field_attaches_file.language', 'value' => array($language->language), 'operator' => 'in');
+    $query->where[] = array('conditions' => $conditions, 'args' => array(), 'type' => 'AND');
+  }
+}
