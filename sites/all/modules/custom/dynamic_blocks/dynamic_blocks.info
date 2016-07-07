@@ -1,0 +1,4 @@
+name = Dynamic Blocks 
+description = This module provides a custom block with dynamic advocacy guide download links. 
+package = Custom 
+core = 7.x 
