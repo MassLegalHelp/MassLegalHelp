@@ -1,0 +1,7 @@
+name = MLH Base
+description = This module provides base functionality on the site. 
+package = Custom 
+core = 7.x 
+
+scripts[] = js/beeline_js/beeline.min.js
+scripts[] = js/mlh_beeline.js

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>BeeLine Reader JavaScript Example</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="http://d1i8c0lj1w48nd.cloudfront.net/1.0.6/beeline.min.js"></script>
+
+    <style>
+      .color {
+        width: 50%;
+        margin: 0 auto;
+        font-size: 24px;
+      }
+    </style>
+  </head>
+  <body> 
+    <div class='color'>
+      BeeLine Reader makes reading faster and easier by using a color gradient that guides your eyes from the end of one line to the beginning of the next. This gradient makes you less likely to skip or repeat lines, so you read faster. See it in action below, or install our extension now.
+    </div>
+
+    <script>
+      var elements = document.querySelectorAll(".color");
+      for (var i = 0; i < elements.length; i++) {
+        var beeline = new BeeLineReader(elements[i], { theme: "bright", skipBackgroundColor: true, handleResize: true });
+        beeline.color();
+      }
+    </script>
+  </body>
+</html>
