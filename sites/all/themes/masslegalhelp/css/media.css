@@ -224,6 +224,11 @@
 		margin-bottom:25px;
 		border-bottom:1px solid #dadada;
 	}
+	/* lily 8/4/2016 - remove white space on the left for mobi */
+	.mlh_center {
+		padding-left:0;
+	}
+	
 	
 	.mlh-right,
 	.section-basic-legal-information .mlh-right {
