@@ -1,4 +1,4 @@
 name = Dynamic Blocks 
-description = This module provides a custom block with dynamic advocacy guide download links. 
+description = This module creates two custom blocks: #1. Generate dynamic "advocacy guide download" links, #2. Generate a link to "email a friend" webform with parameter values.
 package = Custom 
 core = 7.x 
