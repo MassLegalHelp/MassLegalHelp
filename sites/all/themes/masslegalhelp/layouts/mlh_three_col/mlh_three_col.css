@@ -118,8 +118,8 @@
 	padding-left:12px;
 }
 
-.mlh_title .pane-print-ui a,
-.pane-dynamic-blocks-email-friend a {
+.mlh_title .pane-print-ui a
+ {
   font-family: Verdana, Arial, Helvetica, sans-serif;
   font-size: 1em;
   font-weight: normal;
