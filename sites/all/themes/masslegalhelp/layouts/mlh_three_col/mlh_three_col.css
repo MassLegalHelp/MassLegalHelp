@@ -111,7 +111,7 @@
 	display:none;
 }
 
-.pane-dynamic-blocks {
+.pane-dynamic-blocks-email-friend {
 	border-left:1px solid #999999;
 	float:right;
 	margin: 9px 0 0 0;
@@ -119,7 +119,7 @@
 }
 
 .mlh_title .pane-print-ui a,
-.pane-dynamic-blocks a {
+.pane-dynamic-blocks-email-friend a {
   font-family: Verdana, Arial, Helvetica, sans-serif;
   font-size: 1em;
   font-weight: normal;
@@ -129,7 +129,7 @@
 }
 
 .mlh_title .pane-print-ui a:hover,
-.pane-dynamic-blocks a:hover {
+.pane-dynamic-blocks-email-friend a:hover {
 	text-decoration:underline;
 }
 
@@ -141,11 +141,12 @@
 	background:url(images/ico_print.gif) no-repeat left center;
 }
 
-.mlh_title .pane-print-ui a.print-mail {
+.mlh_title .pane-print-ui a.print-mail 
+.pane-dynamic-blocks-email-friend a {
 	background:url(images/ico_mail.gif) no-repeat left center;
 }
 
-.pane-dynamic-blocks .contextual-links-wrapper {
+.pane-dynamic-blocks-email-friend .contextual-links-wrapper {
 	display:none !important;
 }
 
