@@ -27,13 +27,12 @@ function generate_link(&$items) {
 		}
 		
 		$href = $formUrl.$extra;		
-    $alt = t('Send this page to a friend');    
-	  $imgPrefix = '<img src="'.$base_url.'/sites/default/files/mlhfiles/ico_mail.gif" ></img> ';
+    $alt = t('Send this page to a friend');    	  
 				
 		// Create a link to the webform node along w/ the param values
 		$items = array(                
 				'#type' => 'markup',				
-				'#markup' => $imgPrefix.'<a href='.$href.' class="greytxt"  title="'.$alt.'">'.t('Email').'</a>',
+				'#markup' => '<a href='.$href.' class="greytxt"  title="'.$alt.'">'.t('Email').'</a>',
 		);
 	return $items;
 }
