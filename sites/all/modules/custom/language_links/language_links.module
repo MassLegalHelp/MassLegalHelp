@@ -373,12 +373,12 @@ function tell_a_friend_thank_you($nid, $sid) {
 
   $page_detail .= t("Thanks for telling a friend about MasslegalHelp!") . "</div>";
   $page_detail .= "<h2>" . t("You have just sent this webpage:") . "</h2>";
-  $page_detail .= "<p><a href=" . $menu_language . $submission->data[9][0] . ">" . $submission->data[8][0] . "</a></p>";
+  $page_detail .= "<p><a href=" . $menu_language . $submission->data[12][0] . ">" . $submission->data[11][0] . "</a></p>";
   $page_detail .= "<div class=\"mail-submit\">
   <div class=\"mail-submit-to\">" . t("To") . ":" . $submission->data[2][0] . "</div>";
   $page_detail .= "<div class=\"mail-submit-message\"><h2>" . t("Your message") . ":</h2>";
   $page_detail .= "<p>" . $submission->data[7][0] . "</p></div></div>";
-  $page_detail .= "<p><a href=" . $menu_language . $submission->data[9][0] . ">" . t("go back") . "</a></p></div>";
+  $page_detail .= "<p><a href=" . $menu_language . $submission->data[12][0] . ">" . t("go back") . "</a></p></div>";
 
   //return print_r($submission,1);
   return $page_detail;
