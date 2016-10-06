@@ -11,8 +11,13 @@ function generate_link(&$items) {
 		// On the webform node, it expects the caller node's url and title
 		// Note: request_uri() has the article page's language prefix, so it handles the translation automatically.
 		$current_url = substr(request_uri(), 1);	//remove leading "/".
-		$nodeTitle = rawurlencode(drupal_get_title()); //replace space with %20		
-		$extra='?url='.$current_url.'&title='.$nodeTitle; 				
+		
+		$nid = arg(1);
+		$dataNode = node_load($nid);
+		$nodeTitle = $dataNode->title;
+		$nodeTitle = rawurlencode($nodeTitle); //replace space with %20		
+
+	  $extra='?url='.$current_url.'&title='.$nodeTitle; 
 		
 		// Construct the link: form's url plus the extra
 		// Need language prefix for the form node in order to see the translated labels. 
