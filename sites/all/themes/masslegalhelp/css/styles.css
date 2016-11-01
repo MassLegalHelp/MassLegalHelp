@@ -796,6 +796,14 @@ div#block-print-ui-print-links span.print_mail{border-left: #ccc 1px solid; padd
 	color: #336699;
 }
 
+.view-article-view h4, {
+margin: .5em 0px 0px 1em;
+font-size: 1em;
+font-weight: bold;
+color: #666600;
+}
+
+
 .view-article-view ol {
 	margin-left:20px;
 }
