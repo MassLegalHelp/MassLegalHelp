@@ -800,6 +800,20 @@ div#block-print-ui-print-links span.print_mail{border-left: #ccc 1px solid; padd
 	margin-left:20px;
 }
 
+ul.checklist {
+list-style-image: url(/mhl-shared/images/checkbox.gif);
+list-style-type: disc;
+padding: 0px 0px 0px 15px;
+margin: 0px 0px 0px 15px;
+}
+
+ul.checklist-fun {
+list-style-image: url(/immigration/citizen-workshop-folder/check-box.png);
+list-style-type: disc;
+padding: 0px 0px 0px 15px;
+margin: 0px 0px 0px 15px;
+}
+
 .view-article-view .views-row {
 	/*padding-bottom:15px;*/
 }
