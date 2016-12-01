@@ -3,3 +3,108 @@
 /**
  * Base functionality for the Mass Legal Help site.
  */ 
+
+/**
+ * Implements hook_token_info().
+ */
+function mlh_base_token_info() {
+  $token_types = array(
+    'name' => t('MLH'),
+    'description' => t('Tokens related to MLH info.'),
+  );
+
+  $mlh_tokens['lang_code'] = array(
+    'name' => t("MLH Language Code"),
+    'description' => t("The language code of the page."),
+  );
+  $mlh_tokens['lang_prefix'] = array(
+    'name' => t("MLH Language Prefix"),
+    'description' => t("The language prefix of the page."),
+  );
+  $mlh_tokens['path'] = array(
+    'name' => t("MLH Path"),
+    'description' => t("The path of the page or node (translated)."),
+  );
+  $mlh_tokens['full_path'] = array(
+    'name' => t("MLH Full Path"),
+    'description' => t("The full path of the page or node (translated) including the language prefix."),
+  );
+  $mlh_tokens['title'] = array(
+    'name' => t("MLH Title"),
+    'description' => t("The title of the page or node (translated)."),
+  );
+
+  return array(
+    'types' => array('mlh' => $token_types),
+    'tokens' => array('mlh' => $mlh_tokens),
+  );
+}
+
+/**
+ * Implements hook_tokens().
+ */
+function mlh_base_tokens($type, $tokens, array $data = array(), array $options = array()) {
+  // Get the current language.
+  $lang_code = 'en';
+  $lang_prefix = '';
+  if (isset($options['language'])) {
+    $lang_code = $options['language']->language;
+    $lang_prefix = $options['language']->prefix;
+  }
+  else {
+    global $language;
+    $lang_code = $language->language;
+    $lang_prefix = $language->prefix;
+  }
+
+  // Sanitization option from token metadata.
+  $sanitize = !empty($options['sanitize']);
+
+  // Get the node if possible.
+  $node = NULL;
+  if (!empty($data['node'])) {
+    // If passed into token metadata, use that node.
+    $node = $data['node'];
+  }
+  elseif (arg(0) == 'node' && is_numeric(arg(1))) {
+    // If this is a node page, use that node.
+    $node = node_load(arg(1));
+  }
+
+  // Fill in the MLH tokens.
+  $replacements = array();
+
+  if ($type == 'mlh') {
+
+    foreach ($tokens as $name => $original) {
+      switch ($name) {
+        case 'lang_code':
+          $replacements[$original] = $lang_code;
+          break;
+        case 'lang_prefix':
+          $replacements[$original] = $lang_prefix;
+          break;
+        case 'path':
+          $path = drupal_get_path_alias(NULL, $lang_code);
+          $replacements[$original] = $path;
+          break;
+        case 'full_path':
+          // Put the language prefix on the path.
+          $full_path = $lang_prefix . '/' . drupal_get_path_alias(NULL, $lang_code);
+          $replacements[$original] = $full_path;
+          break;
+        case 'title':
+          // Default to the regular title.
+          $title = drupal_get_title();
+          if (!empty($node->title)) {
+            // If there is a node, use that title.
+            $title = $node->title;
+          }
+          $replacements[$original] = $sanitize ? check_plain($title) : $title;
+          break;
+      }
+    }
+  }
+
+  return $replacements;
+}
