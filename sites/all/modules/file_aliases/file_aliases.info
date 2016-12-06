@@ -2,6 +2,8 @@ name = File Aliases
 description = Adds file aliases to file based fields.
 dependencies[] = filefield_paths
 dependencies[] = path
+test_dependencies[] = pathauto
+test_dependencies[] = token
 package = Fields
 core = 7.x
 
@@ -9,9 +11,10 @@ core = 7.x
 ; Files - Simpletest
 
 files[] = tests/file_aliases.test
-; Information added by Drupal.org packaging script on 2015-11-02
-version = "7.x-1.0-beta1+7-dev"
+files[] = tests/pathauto.test
+; Information added by Drupal.org packaging script on 2015-11-28
+version = "7.x-1.0-beta1+14-dev"
 core = "7.x"
 project = "file_aliases"
-datestamp = "1446423271"
+datestamp = "1448701440"
 

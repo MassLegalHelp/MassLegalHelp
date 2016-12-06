@@ -40,7 +40,6 @@ function file_aliases_filefield_paths_field_settings($field, $instance) {
  * @param $langcode
  * @param $items
  */
-/*
 function file_aliases_filefield_paths_process_file($type, $entity, $field, $instance, $langcode, &$items) {
   if (isset($instance['settings']['filefield_paths'])) {
     $settings = $instance['settings']['filefield_paths'];
@@ -62,13 +61,33 @@ function file_aliases_filefield_paths_process_file($type, $entity, $field, $inst
           $type  => $entity
         );
 
-        // Process filename.
-        $settings['file_name']['options']['context'] = 'file_alias';
-        $file['alias'] = filefield_paths_process_string($settings['file_alias']['value'], $token_data, $settings['file_alias']);
+        // Process file alias.
+        // This is a bit hacky, the context should be 'file_alias', but to
+        // ensure the file name doesn't have it's '.' removed we need to
+        // identify as the file name.
+        $settings['file_alias']['options']['context'] = 'file_name';
+        $file['alias'] = filefield_paths_process_string($settings['file_alias']['value'], $token_data, $settings['file_alias']['options']);
+
+        // Convert the file alias into an absolute URL and ensure that it begins
+        // with the current base URL and path.
+        $url = url($file['alias'], array('absolute' => TRUE));
+        $base = $GLOBALS['base_url'] . base_path();
+        if (variable_get('clean_url', 0) == FALSE) {
+          $base .= '?q=';
+        }
+        if (substr($url, 0, strlen($base)) !== $base) {
+          watchdog('file_aliases', 'The file alias %alias could not be created for %destination as it is invalid.', array(
+            '%alias'       => $file['alias'],
+            '%destination' => $file['uri'],
+          ));
+          continue;
+        }
+
+        // Remove the current base URL and path to normalise the file alias.
+        $file['alias'] = substr($url, strlen($base));
 
         $source = "file_aliases/{$file['fid']}";
         $alias = drupal_get_path_alias($source);
-
         if ($alias !== $source) {
           path_delete(array('source' => $source));
         }
@@ -76,41 +95,6 @@ function file_aliases_filefield_paths_process_file($type, $entity, $field, $inst
           'source' => $source,
           'alias'  => $file['alias']
         );
-
-        path_save($path);
-      }
-    }
-  }
-}
-*/
-function file_aliases_filefield_paths_process_file($type, $entity, $field, $instance, $langcode, &$items) {
-  if (isset($instance['settings']['filefield_paths'])) {
-    $filefield_paths_enabled = $instance['settings']['filefield_paths_enabled'];
-    $settings = $instance['settings']['filefield_paths_enabled'];
-    
-//dsm($entity);
-    //if ($filefield_paths_enabled && ($entity->is_new || !$entity->default_revision)) {
-    if ($filefield_paths_enabled) {
-
-      foreach ($items as &$file) {
-        $file['alias'] = $entity->field_file_alias_url[$langcode][0]['value'];
-        $source = "file_aliases/{$file['fid']}";
-        $alias = drupal_get_path_alias($source);
-        //dsm('alias');
-        //dsm($alias);
-        //dsm('source');
-        //dsm($source);
-
-        //if ($alias !== $source) {
-          path_delete(array('source' => $source));
-        //}
-        $path = array(
-            'source' => $source,
-            'alias' => $file['alias'],
-            'language' => $langcode,
-        );
-        //dsm($path);
-
         path_save($path);
       }
     }

@@ -1,0 +1,105 @@
+<?php
+
+/**
+ * @file
+ * Tests for the File Aliases module.
+ */
+
+/**
+ * Class FileAliasesTestCase
+ */
+class FileAliasesTestCase extends FileFieldPathsTestCase {
+  /**
+   * @inheritdoc
+   */
+  function setUp() {
+    // Setup required modules.
+    parent::setUp(array('file_aliases'));
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public static function getInfo() {
+    return array(
+      'name'        => 'File Aliases ',
+      'description' => 'Test File Aliases functionality.',
+      'group'       => 'File Aliases',
+    );
+  }
+
+  /**
+   * Test Public file scheme uploads.
+   */
+  function testPublicUpload() {
+    $this->_testFileUpload('public');
+  }
+
+  /**
+   * Test Private file scheme uploads.
+   */
+  function testPrivateUpload() {
+    $this->_testFileUpload('private');
+  }
+
+  /**
+   * Test file uploads with provided file scheme.
+   *
+   * @param $scheme
+   * @param string $alias
+   */
+  function _testFileUpload($scheme, $alias = 'files/node/[node:nid]/[node:nid].[file:ffp-extension-original]') {
+    $langcode = LANGUAGE_NONE;
+
+    // Create a File field with a file alias.
+    $field_name = drupal_strtolower($this->randomName());
+    $instance_settings['filefield_paths']['file_alias']['value'] = $alias;
+    $field_settings['uri_scheme'] = $scheme;
+    $this->createFileField($field_name, $this->content_type, $field_settings, $instance_settings);
+
+    // Upload a file to a node.
+    $test_file = $this->getTestFile('text');
+    $edit['title'] = $this->randomName();
+    $edit["files[{$field_name}_{$langcode}_0]"] = $test_file->uri;
+    $this->drupalPost("node/add/{$this->content_type}", $edit, t('Save'));
+
+    // Get created Node ID.
+    $matches = array();
+    preg_match('/node\/([0-9]+)/', $this->getUrl(), $matches);
+    $nid = $matches[1];
+
+    // Get the file object.
+    $node = node_load($nid);
+    $items = field_get_items('node', $node, $field_name);
+    $file = file_load($items[0]['fid']);
+
+    // Ensure that the File alias has been processed correctly.
+    $file_alias = "files/node/{$nid}/{$nid}.txt";
+    $url = url($file_alias, array('absolute' => TRUE));
+    $this->assertLinkByHref($url, 0, t('File alias URL is present.'));
+
+    // Ensure that the URL alias has been created correctly.
+    $path = path_load(array('alias' => $file_alias));
+    $this->assert(isset($path['source']) && $path['source'] == "file_aliases/{$file->fid}", t('URL alias has been created correctly.'));
+
+    // Ensure that contents of file alias is correct.
+    // @TODO - This doesn't always work on Travis CI.
+    // $this->drupalGet($url);
+    // $this->assertEqual($this->content, file_get_contents($test_file->uri), t('Contents of file alias is correct'));
+
+    // Ensure the file is deleted when the node is deleted.
+    $this->drupalPost("node/{$nid}/delete", array(), t('Delete'));
+    $this->assert(!file_exists($file->uri), t('File has been deleted successfully.'));
+
+    // Ensure the URL alias is deleted when the file is deleted.
+    $path = path_load(array('alias' => $file_alias));
+    $this->assertFalse($path, t('URL alias has been deleted successfully.'));
+  }
+
+  /**
+   * Test a Rooted file alias.
+   */
+  function testRootedAlias() {
+    $this->_testFileUpload('public', '/files/node/[node:nid]/[node:nid].[file:ffp-extension-original]');
+  }
+}

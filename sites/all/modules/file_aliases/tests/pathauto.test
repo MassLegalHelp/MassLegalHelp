@@ -1,0 +1,63 @@
+<?php
+
+/**
+ * @file
+ * Pathauto module tests for the File Aliases module.
+ */
+
+/**
+ * Class FileAliasesPathautoCase
+ */
+class FileAliasesPathautoCase extends FileFieldPathsTestCase {
+  /**
+   * @inheritdoc
+   */
+  function setUp() {
+    // Setup required modules.
+    parent::setUp(array('file_aliases', 'pathauto'));
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public static function getInfo() {
+    return array(
+      'name'        => 'Pathauto integration',
+      'description' => 'Tests the Pathauto module integration.',
+      'group'       => 'File Aliases',
+    );
+  }
+
+  /**
+   * Test Pathauto cleanup in File (Field) Paths.
+   */
+  public function testPathauto() {
+    $langcode = LANGUAGE_NONE;
+
+    // Create a File field with a file alias.
+    $field_name = drupal_strtolower($this->randomName());
+    $instance_settings['filefield_paths']['file_alias']['value'] = 'files/node/[node:title]/[node:title].[file:ffp-extension-original]';
+    $instance_settings['filefield_paths']['file_alias']['options']['pathauto'] = TRUE;
+    $this->createFileField($field_name, $this->content_type, array(), $instance_settings);
+
+    // Create a node with a test file.
+    $test_file = $this->getTestFile('text');
+    $edit['title'] = 'pathauto test';
+    $edit["files[{$field_name}_{$langcode}_0]"] = $test_file->uri;
+    $this->drupalPost("node/add/{$this->content_type}", $edit, t('Save'));
+
+    // Get the Pathauto processed node title.
+    $node = node_load(1);
+    module_load_include('inc', 'pathauto');
+    $parts = explode('/', $node->title);
+    foreach ($parts as &$part) {
+      $part = pathauto_cleanstring($part);
+    }
+    $title = implode('/', $parts);
+
+    // Ensure that the File alias has been processed correctly.
+    $file_alias = "files/node/{$title}/{$title}.txt";
+    $url = url($file_alias, array('absolute' => TRUE));
+    $this->assertLinkByHref($url, 0, t('File alias URL is present.'));
+  }
+}

@@ -96,7 +96,7 @@ function file_aliases_file_url_alter(&$uri) {
   if ($fid) {
     $source = "file_aliases/{$fid}";
     if (($alias = drupal_get_path_alias($source)) != $source) {
-      $uri = file_create_url($alias);
+      $uri = url($alias, array('absolute' => TRUE));
     }
   }
 }
@@ -112,11 +112,11 @@ function file_aliases_load_fid($fid) {
     exit;
   }
 
-  $results = db_select('file_managed', 'f')
-    ->fields('f', array('filemime', 'uri'))
-    ->condition('fid', $fid)
-    ->execute()
-    ->fetchAll();
+  /** @var DatabaseStatementBase $query */
+  $query = db_select('file_managed', 'f')
+    ->fields('f', array('filemime', 'filesize', 'uri'))
+    ->condition('fid', $fid)->execute();
+  $results = $query->fetchAll();
   $result = current($results);
 
   if (!$result) {
@@ -150,8 +150,9 @@ function file_aliases_load_fid($fid) {
   }
 
   else {
-    header('Cache-Control: public');
-    header("Content-Type: {$result->filemime}");
+    drupal_add_http_header('Cache-Control', 'public');
+    drupal_add_http_header('Content-Length', $result->filesize);
+    drupal_add_http_header('Content-Type', $result->filemime);
     readfile($result->uri);
   }
 }
@@ -159,6 +160,7 @@ function file_aliases_load_fid($fid) {
 /**
  * Implements hook_file_download().
  *
+ * @param $uri
  * @return array
  */
 function file_aliases_file_download($uri) {
@@ -167,14 +169,16 @@ function file_aliases_file_download($uri) {
   $fileinfo = pathinfo($file_alias);
   return array(
     'Cache-Control'       => 'public',
-    'Content-Type'        => mime_content_type($file),
+    'Content-Disposition' => "filename='{$fileinfo['basename']}'",
     'Content-Length'      => filesize($file),
-    'Content-Disposition' => "filename='{$fileinfo['basename']}'"
+    'Content-Type'        => mime_content_type($file),
   );
 }
 
 /**
  * Implements hook_file_delete().
+ *
+ * @param $file
  */
 function file_aliases_file_delete($file) {
   $alias = "file_aliases/{$file->fid}";
