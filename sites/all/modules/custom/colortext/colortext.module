@@ -67,13 +67,12 @@ function colortext_form($form,&$form_state){
   $form['colortext_colors'] = array(
     '#type' => 'select',
     '#name' => 'colortext_colors',
-    '#title' => 'Text Coloration',
     '#options' => $opts,
     '#default_value' => $default,
-    '#attributes' => array(
-      'class' => array('colortext_color_pick')),
+    '#prefix' => '<div class="colortext-color-pick">',
+    '#suffix' => '</div>',
   );
-  return $form;
+   return $form;
 }
 function colortext_admin_form($form, &$form_state) {
   $form = array();

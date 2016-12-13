@@ -2,8 +2,8 @@
     padding:0;
 }
 .form-item-colortext-colors{
-    margin: 0;
-    padding: 5px 10px;
+    margin: 0 !important;
+    padding: 5px 3px 5px 10px;
 }
 #colortext-form{
     margin:0;
@@ -14,4 +14,17 @@ select#edit-colortext-colors{
 .form-item.form-item-colortext-colors label {
     display: inline;
     font-size: 85%;
+}
+
+.colortext-color-pick {
+    background-image: url("../beeline.png");
+    background-position: 5px center;
+    background-repeat: no-repeat;
+    text-indent: 24px;
+}
+
+.panel-pane.pane-block.pane-colortext-colortext-color-block.pane-colortext {
+    float: right;
+    margin: 0;
+    padding: 0;
 }
