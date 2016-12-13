@@ -1,0 +1,91 @@
+<?php
+
+/**
+ * code runs on every page
+ */
+function colortext_init(){
+  global $base_url;
+  drupal_add_js($base_url . '/misc/jquery.cookie.js');
+  drupal_add_css(drupal_get_path('module', 'colortext') .'/css/colortext.css');
+  drupal_add_js(drupal_get_path('module', 'colortext') . '/js/beeline.min.js');
+  drupal_add_js(drupal_get_path('module', 'colortext') . '/js/colortext.js');
+  $colortext_settings = array(
+    'on' => variable_get('colortext_on', false),
+    'element' => variable_get('colortext_text_area', '#main-content'),
+  );
+  drupal_add_js(array('colortext' => $colortext_settings), 'setting');
+}
+function colortext_menu(){
+  $items = array();
+  $items['admin/config/user-interface/colortext'] = array(
+    'title' => 'Colortext Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('colortext_admin_form'),
+    'access arguments' => array('access administration menu'),
+  );
+  return $items;
+}
+function colortext_block_info() {
+  $blocks['colortext_color_block'] = array(
+    'info' => t('Colortext Color Block'), //The name that will appear in the block list.
+    'cache' => DRUPAL_NO_CACHE,
+  );
+  return $blocks;
+}
+function colortext_block_view($delta = '') {
+  global $user;
+  global $base_path;
+  global $base_url;
+  $block = "";
+  switch($delta){
+
+    case 'colortext_color_block':
+
+      $form = drupal_get_form('colortext_form');
+      $ctext = drupal_render($form);
+      $block['subject'] = 'Text Enhancement';
+      $block['content'] = $ctext;
+      break;
+  }
+  //dsm($delta);
+  return $block;
+}
+function colortext_form($form,&$form_state){
+  $default = 'nocolor';
+  if(isset($_COOKIE['colortext_color_pick'])){
+    $default = $_COOKIE['colortext_color_pick'];
+  }
+  $opts = array(
+    'nocolor'=>'No Color',
+    'bright'=>'Bright',
+    'dark'=>'Dark',
+    'blues'=>'Blues',
+    'gray'=>'Gray',
+    'night_gray'=>'Night Gray',
+    'night_blues'=>'Night Blues',
+  );
+  $form['colortext_colors'] = array(
+    '#type' => 'select',
+    '#name' => 'colortext_colors',
+    '#title' => 'Text Coloration',
+    '#options' => $opts,
+    '#default_value' => $default,
+    '#attributes' => array(
+      'class' => array('colortext_color_pick')),
+  );
+  return $form;
+}
+function colortext_admin_form($form, &$form_state) {
+  $form = array();
+  $form['colortext_on'] = array(
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('colortext_on', false) ,
+    '#title' => t('Enable Colortext'),
+  );
+  $form['colortext_text_area'] = array(
+      '#type' => 'textfield',
+      '#default_value' => variable_get('colortext_text_area', '#main-content') ,
+      '#title' => t('DOM element to color'),
+  );
+  return system_settings_form($form);
+}

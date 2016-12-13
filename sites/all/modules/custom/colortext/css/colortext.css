@@ -1,0 +1,17 @@
+#block-colortext-colortext-color-block .block-content{
+    padding:0;
+}
+.form-item-colortext-colors{
+    margin: 0;
+    padding: 5px 10px;
+}
+#colortext-form{
+    margin:0;
+}
+select#edit-colortext-colors{
+    margin:0;
+}
+.form-item.form-item-colortext-colors label {
+    display: inline;
+    font-size: 85%;
+}

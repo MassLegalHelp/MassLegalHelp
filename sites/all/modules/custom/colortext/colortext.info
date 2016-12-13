@@ -1,0 +1,8 @@
+name = Colortext
+description = Using the Beeline script, coloring text for easier reading
+package = Custom 
+core = 7.x 
+
+scripts[] = js/beeline.min.js
+scripts[] = js/colortext.js
+
