@@ -24,7 +24,9 @@ select#edit-colortext-colors{
 }
 
 .panel-pane.pane-block.pane-colortext-colortext-color-block.pane-colortext {
+    clear: both;
     float: right;
     margin: 0;
+    opacity: 0.75;
     padding: 0;
 }
