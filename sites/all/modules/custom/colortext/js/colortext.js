@@ -6,6 +6,7 @@
           var clr = $(this).val();
           $.cookie('colortext_color_pick', clr);
           bees_swarm(clr);
+					ga('send', 'event', 'beeline', pageName, 'changed color', 1);  
         });
         var clr_pick = $.cookie('colortext_color_pick');
         if (typeof clr_pick === "undefined" || clr_pick === "nocolor" || clr_pick === null) {}
@@ -29,8 +30,7 @@
             beeline.color();
 						// Add google universal analytics tracking
 						var url = window.location.href;  
-						var pageName = url.substr(url.lastIndexOf('/') + 1);
-						ga('send', 'event', 'beeline', pageName, 'changed color', 1);  
+						var pageName = url.substr(url.lastIndexOf('/') + 1);						
           }
         }
 			}
