@@ -6,6 +6,17 @@
           var clr = $(this).val();
           $.cookie('colortext_color_pick', clr);
           bees_swarm(clr);
+					
+					// Add google universal analytics tracking 
+					var trackColor = '';					
+					// Track only if the two variables differ, i.e. the color actually changed, not via cookie.
+					if (trackColor != clr) {
+						var url = window.location.href;  
+						var pageName = url.substr(url.lastIndexOf('/') + 1);			
+						ga('send', 'event', 'beeline', pageName, clr, 1);  						
+						trackColor = clr; //set tracked color to user selected color
+					}
+					
         });
         var clr_pick = $.cookie('colortext_color_pick');
         if (typeof clr_pick === "undefined" || clr_pick === "nocolor" || clr_pick === null) {}
