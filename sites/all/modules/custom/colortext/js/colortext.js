@@ -27,6 +27,10 @@
             // Apply selected theme to override the current page's text color
             var beeline = new BeeLineReader(elements[i], color);
             beeline.color();
+						// Add google universal analytics tracking
+						var url = window.location.href;  
+						var pageName = url.substr(url.lastIndexOf('/') + 1);
+						ga('send', 'event', 'beeline', pageName, 'changed color', 1);  
           }
         }
 			}
