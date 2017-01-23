@@ -7,7 +7,7 @@
           $.cookie('colortext_color_pick', clr);
           bees_swarm(clr);
 					
-					// Add google universal analytics tracking 
+					// Add google universal analytics tracking - 01/23/2017
 					var trackColor = '';					
 					// Track only if the two variables differ, i.e. the color actually changed, not via cookie.
 					if (trackColor != clr) {
