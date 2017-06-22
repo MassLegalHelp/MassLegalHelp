@@ -46,9 +46,11 @@
     padding-left: 200px;
 }
 
+/* LY 6/22/2017 - comment this out to remove large space on the left of the  "contact us" page.
 .nosidebar .mlh_main_inner {
 	padding-left: 200px;
 }
+*/
 
 .mlh_center {
 	width:75%;
