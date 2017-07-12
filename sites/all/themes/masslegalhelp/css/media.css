@@ -456,3 +456,11 @@
 		padding-right:6px;
 	}
 }
+
+/* lily 7/2017 */	
+@media all and (max-width: 639px) {
+	.left-margin {
+		padding-left:10px;
+		padding-right:10px;	
+	}
+}

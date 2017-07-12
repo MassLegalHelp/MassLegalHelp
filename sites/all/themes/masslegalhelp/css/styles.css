@@ -2144,3 +2144,35 @@ text-decoration: none;
 .view-file-attches .views-field-field-hidden {
 	display:none;
 }
+
+/* lily 7//2017 - add rules for individual panelizers (1 or 2 columns) */
+.redline {
+    border-bottom: 1px solid #cc3300;
+	padding:12px 0 5px;
+	overflow:hidden;
+}
+
+.redline  .pane-print-ui,
+#email-forms {
+	float:right;
+	padding-top: 9px;
+}
+
+.redline .pane-print-ui span {
+	margin:0;
+	padding: 0 12px;
+}
+
+.redline .pane-print-ui span.print_mail {
+	border-left:1px solid #999999;
+	display:none;
+}
+
+/* for pages without left bar */
+.left-margin {
+	padding-left:40px;
+	padding-right:40px;	
+	-webkit-padding-end: 40px; /* for chrome */
+	-webkit-padding-start: 40px; /* for chrome */
+}
+
