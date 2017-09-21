@@ -310,7 +310,7 @@ class TMGMTFileformatXLIFF extends XMLWriter implements TMGMTFileFormatInterface
     // In case we do not want to do xliff processing return the translation as
     // is.
     if (!$job->getSetting('xliff_processing')) {
-      return $translation;
+      return decode_entities($translation);
     }
 
     $reader = new XMLReader();

@@ -46,16 +46,42 @@ class TMGMTFileFormatHTML implements TMGMTFileFormatInterface {
    * {@inheritdoc}
    */
   public function import($imported_file) {
-    $dom = new DOMDocument();
+   $dom = new DOMDocument();
+
     $dom->loadHTMLFile($imported_file);
+
     $xml = simplexml_import_dom($dom);
 
     $data = array();
+
     foreach ($xml->xpath("//div[@class='atom']") as $atom) {
+
       // Assets are our strings (eq fields in nodes).
+
       $key = $this->decodeIdSafeBase64((string) $atom['id']);
-      $data[$key]['#text'] = (string) $atom;
+
+      // This is for plain text.
+
+      $content = (string) $atom;
+
+      foreach ($atom->children() as $child) {
+
+        // This is for HTML.
+
+        $content .= $child->asXML();
+
+      }
+
+      // Get rid of some Windows characters.
+
+      $content = str_replace('&#13;', '', $content);
+
+      $content = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $content);
+
+      $data[$key]['#text'] = $content;
+
     }
+
     return tmgmt_unflatten_data($data);
   }
 
