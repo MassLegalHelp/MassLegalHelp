@@ -116,7 +116,7 @@
       <?php print render($title_suffix); ?>
       <?php print $messages; ?>
 	  <?php 
-		$admin = (user_access('administer users') || user_access('administer nodes'));
+		$admin = user_access('administer users');
 		if($admin && $tabs){
 	  ?>
 		  <div class="tabs-wrapper">

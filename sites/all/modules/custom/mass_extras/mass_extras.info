@@ -1,0 +1,6 @@
+;$Id$
+name = MassLegal Extras
+description = Adds custom functions for masslegalhelp.org
+core = 7.x
+files[] = mass_extras.module
+

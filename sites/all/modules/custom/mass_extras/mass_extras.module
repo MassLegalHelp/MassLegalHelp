@@ -1,0 +1,29 @@
+<?php
+
+function mass_extras_filefield_paths_process_file($type, $entity, $field, $instance, $langcode, &$items) {
+  if ($langcode == "und") {
+    $lang = "en";
+  }
+  else {
+    $lang = $langcode;
+  }
+  if ($entity->field_name == "field_attaches_file") {
+    if (isset($entity->field_file_alias_url[$lang][0]['value'])) {
+      $alias = $entity->field_file_alias_url[$lang][0]['value'];
+      if ($alias) {
+        $file['alias'] = str_ireplace($alias, " ", "-");
+      }
+      $fid = $entity->field_attached_file[$lang][0]['fid'];
+      $source = "file_aliases/" . $fid;
+      $curalias = drupal_get_path_alias($source);
+      if ($curalias !== $source) {
+        path_delete(array('source' => $source));
+      }
+      $path = array(
+        'source' => $source,
+        'alias' => $alias
+      );
+      path_save($path);
+    }
+  }
+}

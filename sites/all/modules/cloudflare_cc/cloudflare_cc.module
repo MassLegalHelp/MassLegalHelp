@@ -1,0 +1,121 @@
+<?php
+
+/**
+ * @file
+ * Defines the Cloudflare Cache Clearing module.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function cloudflare_cc_menu(){
+  $items = array();
+
+  $items['admin/config/services/cloudflare-cc'] = array(
+    'title' => 'Cloudflare Clear Cache Settings',
+    'description' => 'API settings for Cloudflare to allow the clearing of the Cloudflare cache.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('cloudflare_cc_settings_form'),
+    'access arguments' => array('cloudflare cc administer'),
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function cloudflare_cc_permission(){
+  return array(
+    'cloudflare cc administer' => array(
+      'title' => t('Administer Cloudflare Settings'),
+      'restrict access' => TRUE,
+    ),
+  );
+}
+
+/**
+ * Callback for the settings form.
+ */
+function cloudflare_cc_settings_form(){
+  $form = array();
+
+  $form['cloudflare_cc_identifier'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Cloudflare Identifier'),
+    '#description' => t('Enter your Cloudflare Identifier here. If you need help finding your identifier, please visit <a href="!url">this link</a>.', array(
+      '!url' => url('https://blog.cloudflare.com/cloudflare-tips-frequently-used-cloudflare-ap/'),
+    )),
+    '#default_value' => variable_get('cloudflare_cc_identifier', ''),
+    '#required' => TRUE,
+  );
+
+  $form['cloudflare_cc_email'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Cloudflare Email Address'),
+    '#default_value' => variable_get('cloudflare_cc_email', ''),
+    '#required' => TRUE,
+  );
+
+  $form['cloudflare_cc_key'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Cloudflare API Key'),
+    '#default_value' => variable_get('cloudflare_cc_key', ''),
+    '#required' => TRUE,
+  );
+
+  return system_settings_form($form);
+}
+
+/**
+ * Implements hook_form_submit().
+ */
+function cloudflare_cc_settings_form_submit($form, &$form_state){
+  
+}
+
+/**
+ * Callback for clearing the cache.
+ */
+function cloudflare_cc_clear_cache(){
+  $response = drupal_http_request('https://api.cloudflare.com/client/v4/zones/' . variable_get('cloudflare_cc_identifier') . '/purge_cache', array(
+    'method' => 'DELETE',
+    'headers' => array(
+      'X-Auth-Email' => variable_get('cloudflare_cc_email'),
+      'X-Auth-Key' => variable_get('cloudflare_cc_key'),
+      'Conten-Type' => 'application/json',
+    ),
+    'data' => json_encode(array(
+      'purge_everything' => TRUE,
+    )),
+  ));
+
+  $result = json_decode($response->data);
+  if(isset($result->success) && $result->success == TRUE){
+    drupal_set_message(t('Cloudflare Cache Cleared Successfully.'));
+    watchdog('cloudflare_cc', 'Cloudflare Cache Cleared Successfully', array(), WATCHDOG_INFO);
+  }else{
+    drupal_set_message(t('Cloudflare Cache not cleared.'), 'error');
+    watchdog('cloudflare_cc', 'Cloudflare Cache not cleared. <pre>@result</pre>', array(
+      '@result' => print_r($result, 1),
+    ), WATCHDOG_ERROR);
+  }
+}
+
+/**
+ * Implements hook_flush_caches().
+ */
+function cloudflare_cc_flush_caches(){
+  variable_set('cloudflare_cc_flush_flag', TRUE);
+  return array();
+}
+
+/**
+ * Implements hook_init().
+ */
+function cloudflare_cc_init(){
+  if(variable_get('cloudflare_cc_flush_flag')){
+    variable_set('cloudflare_cc_flush_flag', FALSE);
+    cloudflare_cc_clear_cache();
+  }
+}
