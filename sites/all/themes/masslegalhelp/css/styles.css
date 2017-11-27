@@ -708,7 +708,7 @@ div#block-print-ui-print-links span.print_mail{border-left: #ccc 1px solid; padd
 .view-article-view .views-field-php {
 	display:none;
 	clear:both;
-	border-top:1px solid #CCCCCC;
+	/*border-top:1px solid #CCCCCC; -remove top border from article created by section 11/27/2017*/
 	padding-top:5px;
 	padding-bottom:5px;
 }
@@ -720,7 +720,8 @@ div#block-print-ui-print-links span.print_mail{border-left: #ccc 1px solid; padd
 .view-article-view .views-row-last .views-field-php {
 	display:block;
 	margin-top:12px;
-	border-bottom:1px solid #CCCCCC;
+	/*border-bottom:1px solid #CCCCCC; - remove bottom border from article created by section 11/27/2017*/
+	margin-bottom: 15px; /* add margin-bottom 11/8/2017*/
 	padding-bottom:5px;
 }
 

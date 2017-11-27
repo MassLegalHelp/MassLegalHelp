@@ -33,6 +33,20 @@ if ( obj.style.display != "none" ) {
 } // if
 } // toggleDiv
 
+// Add a new function toggleDiv2 for SNAP advocacy guide links hide/show block 11/27/2017 
+function toggleDiv2(shID) {
+   if (document.getElementById(shID)) {
+        if (document.getElementById(shID + '-show').style.display != 'none') {
+            document.getElementById(shID + '-show').style.display = 'none';
+			document.getElementById(shID + '-hide').style.display = 'inline';
+            document.getElementById(shID).style.display = 'block';
+        } else {
+            document.getElementById(shID + '-show').style.display = 'inline';
+			document.getElementById(shID + '-hide').style.display = 'none';
+            document.getElementById(shID).style.display = 'none';
+        }
+    }
+}
 
 jQuery( document ).ready(function() {
 if(jQuery("#show_hide").length == 0) {
