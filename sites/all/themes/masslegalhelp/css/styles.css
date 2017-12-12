@@ -713,11 +713,7 @@ div#block-print-ui-print-links span.print_mail{border-left: #ccc 1px solid; padd
 	padding-bottom:5px;
 }
 
-.view-article-view .views-row-last .views-field-field-author {
-	/*display:block;*/
-}
-
-.view-article-view .views-row-last .views-field-php {
+.view-article-view .views-row-first .views-field-php {
 	display:block;
 	margin-top:12px;
 	/*border-bottom:1px solid #CCCCCC; - remove bottom border from article created by section 11/27/2017*/
@@ -732,7 +728,7 @@ div#block-print-ui-print-links span.print_mail{border-left: #ccc 1px solid; padd
 	display:none;
 }
 
-.views-row-last .field-name-created-or-update {
+.views-row-first .field-name-created-or-update {
 		display:block;
 }
 
@@ -743,13 +739,10 @@ div#block-print-ui-print-links span.print_mail{border-left: #ccc 1px solid; padd
 
 .view-article-view .views-field-field-updated,
 .mlh_center .views-field-field-created {
-	/*clear:both;
-	border-bottom:1px solid #CCCCCC;
-	padding-bottom:5px;*/
 	display:none;
 }
 
-.view-article-view .views-row-last .views-field-field-author + .views-field-php {
+.view-article-view .views-row-first .views-field-field-author + .views-field-php {
 	clear:both;
 	border-bottom:1px solid #CCCCCC;
 	border-top:none;
@@ -769,22 +762,17 @@ div#block-print-ui-print-links span.print_mail{border-left: #ccc 1px solid; padd
 }
 
 
-.view-article-view .views-row-last .views-field-field-updated ,
-.view-article-view .views-row-last .views-field-field-author + .views-field-php {
-	/*display:block;*/
-}
-
 .view-article-view .views-field-field-author .views-label,
 .view-article-view .views-field-field-updated .views-label,
 .mlh_center .views-field-field-created .views-label,
-.view-article-view .views-row-last .views-field-field-author + .views-field-php .last_updated {
+.view-article-view .views-row-first .views-field-field-author + .views-field-php .last_updated {
 	float:left;
 	display:block;
     font-weight: bold;
     padding-right: 5px;
 }
 
-.view-article-view .views-row-last .views-field-php .last_updated {
+.view-article-view .views-row-first .views-field-php .last_updated {
     font-weight: bold;
     padding-right: 5px;
 }
@@ -2176,4 +2164,3 @@ text-decoration: none;
 	-webkit-padding-end: 40px; /* for chrome */
 	-webkit-padding-start: 40px; /* for chrome */
 }
-
