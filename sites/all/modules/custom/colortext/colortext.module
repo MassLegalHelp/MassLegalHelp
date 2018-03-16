@@ -4,11 +4,11 @@
  * code runs on every page
  */
 function colortext_init(){
-  global $base_url;
-  drupal_add_js($base_url . '/misc/jquery.cookie.js');
+  drupal_add_library('system', 'jquery.cookie');
   drupal_add_css(drupal_get_path('module', 'colortext') .'/css/colortext.css');
   drupal_add_js(drupal_get_path('module', 'colortext') . '/js/beeline.min.js');
   drupal_add_js(drupal_get_path('module', 'colortext') . '/js/colortext.js');
+
   $colortext_settings = array(
     'on' => variable_get('colortext_on', false),
     'element' => variable_get('colortext_text_area', '#main-content'),
