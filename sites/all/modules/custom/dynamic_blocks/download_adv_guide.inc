@@ -1,93 +1,116 @@
 <?php
 
 function generate_content(&$list) {
-		// 1. Get current page url and breadcrumb    	 
-		$url = drupal_get_path_alias($_GET['q']);
+	// 1. Get current page breadcrumb    
     $menuTrail = menu_get_active_trail("node/$node->nid"); 	 
 	 
-	  // 2. Construct pdf file title and download path
-	  // 2.a Get text from the breadcrumb and use it as the PDF display title
-    $pdfDisplayTitle = array();
-	  $pdfDisplayTitle["chapter"]=$menuTrail[6]["title"];	 
-	  $pdfDisplayTitle["guide"]=$menuTrail[5]["title"];	 
-	  $pdfDisplayTitle["ePub"] = $pdfDisplayTitle["guide"]." for Android or i-devices";
-	  $pdfDisplayTitle["mobi"] = $pdfDisplayTitle["guide"]." for Kindle";
-	 
-	  // 2.b Change blank space to "-" and convert the pdf file name to lower case 
-	  $pdfName=array();
-	  $pdfName["guide"] = strtolower(str_replace(' ', '-', $pdfDisplayTitle["guide"]));
-    $pdfName["chapter"] = strtolower(str_replace(' ', '-', $pdfDisplayTitle["chapter"]));
+	 // 2. Construct file titles 
+	 // 2.a Get text from the breadcrumb and use it as the file title for display
+    $fileTitle = array();
+	$fileTitle["guide"]=$menuTrail[4]["title"];		
+	$fileTitle["chapter"]=$menuTrail[5]["title"];	
+	
+	// EA book goes a level deeper because it's in a different Subject area
+	if ($fileTitle["guide"] = "Emergency Assistance Advocacy Guide") {		
+		$fileTitle["guide"]=$menuTrail[5]["title"];		
+		$fileTitle["chapter"]=$menuTrail[6]["title"];	 
+	};
+	
+	$fileTitle["ePub"] = $fileTitle["guide"]." for Android or i-devices";
+	$fileTitle["mobi"] = $fileTitle["guide"]." for Kindle";
+	$fileTitle["azw3"] = $fileTitle["guide"]." for Kindle Fire and Kindle Flash";
+	
+	// 2.b Change blank space in the title above to "-", and convert the title to lower case. 
+	// They will be used as download file titles.
+	$guideName=array();
+	$guideName["guide"] = strtolower(str_replace(' ', '-', $fileTitle["guide"]));
+    $guideName["chapter"] = strtolower(str_replace(' ', '-', $fileTitle["chapter"]));
 
-    // 3. Construct download links
-	  // 3.a For question pages, remove the last piece (/partx) from the url
-    if (is_numeric(substr($url, -1))) {
-      $url=dirname($url);
-    }
-		
-	  $pdfPath = array();
-    $pdfPath["chapter"] = $url."/".$pdfName["chapter"].".pdf";
-    $pdfPath["ePub"] = dirname(dirname($url))."/".$pdfName["guide"].".epub";
-	  $pdfPath["mobi"] = dirname(dirname($url))."/".$pdfName["guide"].".mobi"; 
+    // 3. Construct download file paths	using the path alias of each adv guide file field
+    // On MLH there are only 3 online advocacy guides, which follows a pattern that make the yellow box useful.	
+	// For the other two guides (UI and EAEDC) since no chapter files are available, yellow box is pointless, so ignore them in this module.
+	switch ($guideName["guide"]) {
+    case "food-stamp-advocacy-guide":
+        $pathAlias = '/income-benefits/food-stamps-advocacy-guide'; 		
+        break;
+    case "tafdc-advocacy-guide":
+        $pathAlias = '/income-benefits/tafdc-advocacy-guide'; 		
+        break;
+    case "emergency-assistance-advocacy-guide":
+        $pathAlias = '/homelessness/emergency-assistance-advocacy-guide'; 		
+        break;
+	}	
+	
+	// Chapter file path.
+	$pdfPath = array();
+	$pdfPath["chapter"] = "/".$guideName["guide"]."/".$guideName["chapter"].".pdf";
+	
+	// Full book path.
+	$pdfPath["guide"] = $pathAlias."/".$guideName["guide"].".pdf";
+    $pdfPath["ePub"] = $pathAlias."/".$guideName["guide"].".epub";
+	$pdfPath["mobi"] = $pathAlias."/".$guideName["guide"].".mobi"; 
+	$pdfPath["azw3"] = $pathAlias."/".$guideName["guide"].".azw3"; 
 
     // 4. Generate links list
-    // 4a. For chapter and its children pages, display the chapter pdf download link
     $list = array();
-		if ($pdfName["chapter"] >= "a") {	  
-		  $prefix = '<p><img src="/mhl-shared/images/pdf.gif" /> ';		
-      $title = $pdfDisplayTitle["chapter"];		
-		  $href = $pdfPath["chapter"];
-		  $list[] = addtolist($listItem, $title, $href, $prefix);			
-	  };		// end of chapter pdf download
-		
-		// 4b. For chapter pages, display the full guide pdf download link 	
-		if (empty($menuTrail[7]["title"])) {						
-			if ($pdfName["guide"] == "food-stamp/snap-advocacy-guide") {
-				$prefix = '<p><img src="/mhl-shared/images/pdf.gif" /> ';
-				$title = 'SNAP Advocacy Guide';
-				$href = 'http://www.masslegalservices.org/FoodStampSNAPAdvocacyGuide';
-			}
-			else if ($pdfName["guide"] == "tafdc-advocacy-guide") {
-				$prefix = '<p><img src="/mhl-shared/images/pdf.gif" /> ';
-				$title = 'TAFDC Advocacy Guide';
-				$href = 'http://www.masslegalservices.org/system/files/library/TAFDC%20Guide%20-%202016.pdf';
-			}
-			if ($title == 'SNAP Advocacy Guide' || $title == 'TAFDC Advocacy Guide') {
-				$list[] = addtolist($listItem, $title, $href, $prefix);						
-			}
-		} // end of full guide download
-		
-		// 4c. In addition, for all pages display the ebook download links 	
-		$prefix = '<p>Download the entire book as an eBook - ';
-		$title = 'Find out how';
-		$href = 'http://www.masslegalhelp.org/how-do-i-download-an-ebook-';
-		$list[] = addtolist($listItem, $title, $href, $prefix);			
-		
-		$prefix = '<p><img src="/shared-images/epub_logo_color.png" /> ';
-		$title = $pdfDisplayTitle["ePub"];
-		$href = $pdfPath["ePub"];
-		$list[] = addtolist($listItem, $title, $href, $prefix);			
-
-		$prefix = '<p><img src="/shared-images/kindle.png" /> ';
-		$title = $pdfDisplayTitle["mobi"];
-		$href = $pdfPath["mobi"];
-		$list[] = addtolist($listItem, $title, $href, $prefix);			
-		
-		// 4d. For the guide level page, display a link for buying a hard copy	
-		if ($pdfDisplayTitle["chapter"] == "") {
-			if ($pdfName["guide"] == "food-stamp/snap-advocacy-guide") {
-				$prefix = '<p>Buy a hard copy from ';
-				$title = ' MCLE ($9.95)';
-				$href = 'http://www.mcle.org/books-cds/books-catalog.cfm?product_code=2120278B16';
-			}
-			else if ($pdfName["guide"] == "tafdc-advocacy-guide") {
-				$prefix = '<p>Buy a hard copy from ';
-				$title = ' MCLE ($9.95)';
-				$href = 'http://www.mcle.org/product/catalog/code/2140436B19';
-			}
-			$list[] = addtolist($listItem, $title, $href, $prefix);		
-		}	  // End of ebook download links
+	$PDFimg = '<p><img src="/sites/default/files/mlhfiles/file_images/pdf.gif" /> ';		
 	
-	//dsm($list);
+	$prefix = '<p>Download the entire book as an eBook - ';
+	$title = 'Find out how';
+	$href = 'https://www.masslegalhelp.org/how-do-i-download-an-ebook-';
+	$list[] = addtolist($listItem, $title, $href, $prefix);		
+	
+	// 4a. For chapter and its children pages, display the chapter pdf download link    
+	if ($pdfChapter = "Y") {	
+		if ($guideName["chapter"] >= "a") {	  	  
+			$title = $fileTitle["chapter"];		
+			$href = $pdfPath["chapter"];
+			$list[] = addtolist($listItem, $title, $href, $PDFimg);					
+			};		// end of chapter pdf download
+	}
+	
+	// 4b. For all pages, display the full guide pdf download link 				
+	$title = $fileTitle["guide"];
+	$href = $pdfPath["guide"];
+	if ($title == 'Food Stamp (SNAP) Advocacy Guide' || $title == 'TAFDC Advocacy Guide' || $title == 'Emergency Assistance Advocacy Guide' || $title == 'Finding Housing' ) {
+		$list[] = addtolist($listItem, $title, $href, $PDFimg);						
+	} // end of full guide pdf download		
+		
+	// 4c. In addition, for all pages display the ebook download links 		
+	$prefix = '<p><img src="/sites/default/files/mlhfiles/file_images/epub.png" /> ';
+	$title = $fileTitle["ePub"];
+	$href = $pdfPath["ePub"];
+	$list[] = addtolist($listItem, $title, $href, $prefix);			
+
+	$prefix = '<p><img src="/sites/default/files/mlhfiles/file_images/kindle.png" /> ';
+	$title = $fileTitle["mobi"];
+	$href = $pdfPath["mobi"];
+	$list[] = addtolist($listItem, $title, $href, $prefix);			
+	
+	$prefix = '<p><img src="/sites/default/files/mlhfiles/file_images/KindleFire.png" /> ';
+	$title = $fileTitle["azw3"];
+	$href = $pdfPath["azw3"];
+	$list[] = addtolist($listItem, $title, $href, $prefix);	
+	
+	// 4d. For all pages, display a link for buying a hard copy		
+	$prefix = '<p>Buy a hard copy from ';
+	$title = ' MCLE ($9.95)';
+	
+	switch ($guideName["guide"]) {
+	case 'food-stamp-(snap)-advocacy-guide':
+		$href = variable_get('hard_copy_url_snap', '#url-snap');
+		break;
+	case 'tafdc-advocacy-guide':
+		$href = variable_get('hard_copy_url_tafdc', '#url-tafdc');	
+		break;
+	case 'emergency-assistance-advocacy-guide':
+		$href = variable_get('hard_copy_url_ea', '#url-ea');
+		break;
+	}
+	
+	$list[] = addtolist($listItem, $title, $href, $prefix);		
+  // End of ebook download links
+	
 	return $list;		
 }
 
@@ -95,9 +118,10 @@ function addtolist(&$listItem, $title, $href, $prefix) {
 	$listItem = array(			
 		'data' => array(				
 			'#title' => $title,
-			'#href' => $href,
+			'#href' => $href,		
 			'#type' => 'link',
-			),
+			'#attributes' => array('target' => '_blank'),			
+		),
 		'#prefix' => $prefix,
 		'#suffix' => '</p>',			
 	);

@@ -21,6 +21,20 @@ function dynamic_blocks_block_info(){
 } 
 
 /** 
+* Create an admin settings screen. 
+*/ 
+function dynamic_blocks_menu(){
+  $items = array();
+  $items['admin/config/user-interface/dynamic_blocks'] = array(
+    'title' => 'Dynamic Box - download advocacy guide settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('dynamic_blocks_admin_form'),
+    'access arguments' => array('access administration menu'),
+  );
+  return $items;
+}
+
+/** 
 * Define what our blocks will look like. 
 * Implements hook_block_view(). 
 */ 
@@ -50,6 +64,37 @@ function dynamic_blocks_block_view($delta =''){
 				'content' => generate_link($items), 
 			);
 			break;
-  }
+	}
 		return $block;
  }
+
+ /** 
+* Use this settings screen to enter hard copy book url at MCLE, they change each year. 
+*/ 
+
+ function dynamic_blocks_admin_form($form, &$form_state) {
+  $form = array();
+  $form['hard_copy_url_ea'] = array(
+      '#type' => 'textfield',
+	  '#title' => t('EA Advocacy Guide - Hard Copy URL'),
+      '#default_value' => variable_get('hard_copy_url_ea', 'enter url-ea'),
+      '#description' => t('This URL requires update every year, and is used in the Download Advocacy Guide yellow-box block.'),
+	  '#size' => 100,
+  );
+  $form['hard_copy_url_tafdc'] = array(
+      '#type' => 'textfield',
+	  '#title' => t('TAFDC Advocacy Guide - Hard Copy URL'),
+      '#default_value' => variable_get('hard_copy_url_tafdc', 'enter url-tafdc'),
+      '#description' => t('This URL requires update every year, and is used in the Download Advocacy Guide yellow-box block.'),
+	  '#size' => 100,
+  );
+  $form['hard_copy_url_snap'] = array(
+      '#type' => 'textfield',
+	  '#title' => t('Food Stamps (SNAP) Advocacy Guide - Hard Copy URL'),
+      '#default_value' => variable_get('hard_copy_url_snap', 'enter url-snap'),
+      '#description' => t('This URL requires update every year, and is used in the Download Advocacy Guide yellow-box block.'),
+	  '#size' => 100,
+  );
+  
+  return system_settings_form($form);
+}
