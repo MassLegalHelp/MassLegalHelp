@@ -146,11 +146,10 @@ function open_readspeaker_block_view($delta = '') {
  */
 function theme_open_readspeaker_ui() {
   // We don't use the $vars param.
-  global $is_https;
 
   $output = '';
 
-  $http = 'http';
+  $http = 'https';
 
   $accountid             = variable_get('open_readspeaker_accountid', '');
   $open_readspeaker_i18n = variable_get('open_readspeaker_i18n', '');	
@@ -171,11 +170,8 @@ function theme_open_readspeaker_ui() {
     return $output;
   }
 
-  if ($is_https) {
-    $http = 'https';
-  }
-
-  drupal_add_js($http . "://f1.eu.readspeaker.com/script/$accountid/ReadSpeaker.js?pids=embhl{$custom_param}", 'external');
+  /* lily 4/3/2018 - replace app.eu with app-eu to handle https */
+  drupal_add_js($http . "://f1-eu.readspeaker.com/script/$accountid/ReadSpeaker.js?pids=embhl{$custom_param}", 'external');
   drupal_add_css(drupal_get_path('module', 'open_readspeaker') . '/open_readspeaker.css', array(
     'group' => CSS_THEME,
     'media' => 'screen',
@@ -208,7 +204,9 @@ function theme_open_readspeaker_ui() {
 	4/13/2016 - replaced lang=' . $open_readspeaker_i18n with lang=$pagelang. */
   $output .= '<!-- RS_MODULE_CODE -->';
   $output .= '<div id="readspeaker_button1" class="rs_skip rsbtn rs_preserve"' . $custom_style . '>';
-  $output .= '<a class="rsbtn_play" title="' . t('Listen to this page using ReadSpeaker') . '" accesskey="L" href="' . $http . '://app.eu.readspeaker.com/cgi-bin/rsent?customerid=' . $accountid . '&amp;lang=' . $pagelang . '&amp;readclass=' . variable_get('open_readspeaker_reading_area', 'rs_read_this') . '&amp;url=' . urlencode($request_path) . '">';
+  
+  /* lily 4/3/2018 - replace app.eu with app-eu to handle https */
+  $output .= '<a class="rsbtn_play" title="' . t('Listen to this page using ReadSpeaker') . '" accesskey="L" href="' . $http . '://app-eu.readspeaker.com/cgi-bin/rsent?customerid=' . $accountid . '&amp;lang=' . $pagelang . '&amp;readclass=' . variable_get('open_readspeaker_reading_area', 'rs_read_this') . '&amp;url=' . urlencode($request_path) . '">';
   $output .= '<span class="rsbtn_left rsimg rspart"><span class="rsbtn_text"><span>' . t('Listen') . '</span></span></span>';
   $output .= '<span class="rsbtn_right rsimg rsplay rspart"></span>';
   $output .= '</a></div>';
