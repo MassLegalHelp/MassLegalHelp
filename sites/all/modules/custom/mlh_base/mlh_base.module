@@ -1,8 +1,8 @@
-<?php 
+<?php
 
 /**
  * Base functionality for the Mass Legal Help site.
- */ 
+ */
 
 /**
  * Implements hook_token_info().
@@ -78,33 +78,275 @@ function mlh_base_tokens($type, $tokens, array $data = array(), array $options =
 
     foreach ($tokens as $name => $original) {
       switch ($name) {
-        case 'lang_code':
-          $replacements[$original] = $lang_code;
-          break;
-        case 'lang_prefix':
-          $replacements[$original] = $lang_prefix;
-          break;
-        case 'path':
-          $path = drupal_get_path_alias(NULL, $lang_code);
-          $replacements[$original] = $path;
-          break;
-        case 'full_path':
-          // Put the language prefix on the path.
-          $full_path = $lang_prefix . '/' . drupal_get_path_alias(NULL, $lang_code);
-          $replacements[$original] = $full_path;
-          break;
-        case 'title':
-          // Default to the regular title.
-          $title = drupal_get_title();
-          if (!empty($node->title)) {
-            // If there is a node, use that title.
-            $title = $node->title;
-          }
-          $replacements[$original] = $sanitize ? check_plain($title) : $title;
-          break;
+      case 'lang_code':
+        $replacements[$original] = $lang_code;
+        break;
+      case 'lang_prefix':
+        $replacements[$original] = $lang_prefix;
+        break;
+      case 'path':
+        $path = drupal_get_path_alias(NULL, $lang_code);
+        $replacements[$original] = $path;
+        break;
+      case 'full_path':
+        // Put the language prefix on the path.
+        $full_path = $lang_prefix . '/' . drupal_get_path_alias(NULL, $lang_code);
+        $replacements[$original] = $full_path;
+        break;
+      case 'title':
+        // Default to the regular title.
+        $title = drupal_get_title();
+        if (!empty($node->title)) {
+          // If there is a node, use that title.
+          $title = $node->title;
+        }
+        $replacements[$original] = $sanitize ? check_plain($title) : $title;
+        break;
       }
     }
   }
 
   return $replacements;
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function mlh_base_block_info() {
+  $blocks['mlh_node_pager'] = array(
+    'info' => t('MLH Node Pager'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function mlh_base_block_view($delta = '') {
+  $block = array();
+  switch ($delta) {
+  case 'mlh_node_pager':
+    $max_length = 32;
+    $wordsafe = FALSE;
+    $ellipsis = TRUE;
+    $items = array();
+    $navigation = _mlh_base_node_pager_navigation();
+    // Previous link.
+    if (!empty($navigation['previous'])) {
+      $options = array('attributes' => array('title' => $navigation['previous']['link_title']));
+      $title = truncate_utf8($navigation['previous']['link_title'], $max_length, $wordsafe, $ellipsis);
+      $items['previous'] = array(
+        'data' => l('« ' . $title, $navigation['previous']['link_path'], $options),
+        'class' => array('menu-pager-previous'),
+      );
+    }
+
+    // Next link.
+    if (!empty($navigation['next'])) {
+      $options = array('attributes' => array('title' => $navigation['next']['link_title']));
+      $title = truncate_utf8($navigation['next']['link_title'], $max_length, $wordsafe, $ellipsis);
+      $items['next'] = array(
+        'data' => l($title . ' »', $navigation['next']['link_path'], $options),
+        'class' => array('menu-pager-next'),
+      );
+    }
+
+    $block['subject'] = t('MLH Node Pager');
+    $block['content'] = array(
+      '#theme' => 'item_list',
+      '#items' => $items,
+      '#attributes' => array('class' => array('menu-pager', 'clearfix')),
+      '#attached' => array(
+        'css' => array(
+          drupal_get_path('module', 'mlh_base') . '/css/mlh_base.node_pager.css',
+        ),
+      ),
+    );
+    break;
+  }
+
+  return $block;
+}
+
+/**
+ * Code adapted from https://www.drupal.org/project/menu_block/issues/2420637#comment-11985664
+ * Updated to handle multilingual content and work with MLH menu structure.
+ */
+function _mlh_base_node_pager_navigation() {
+  global $language;
+  $nid = arg(1);
+  $navigation = array();
+  if (arg(0) == 'node' && isset($nid)) {
+    // Get the menu link id for the given node id and language.
+    $sql = "SELECT mlid
+      FROM {menu_links}
+      WHERE link_path = :path AND
+      module = 'menu' AND
+      (language = :language OR
+       language = 'und')
+      ORDER BY mlid ASC";
+    $mlid = db_query($sql, array(':path' => 'node/' . $nid, ':language' => $language->language))->fetchObject();
+
+    $previous = array();
+    $next = array();
+    if ($mlid && isset($mlid->mlid)) {
+
+      // Grab the current menu item based on above query.
+      $item = menu_link_load($mlid->mlid);
+
+      // Load the menu tree from menu block.
+      $config = _mlh_base_get_menu_block_config();
+      $menu = menu_tree_block_data($config);
+
+      // Loop and flatten the menu hierarchy into a single array.
+      $links = _mlh_base_loop_menu($menu, $item['mlid']);
+      if (empty($links)) {
+        return;
+      }
+
+      // Loop through links looking for current mlid.
+      foreach ($links as $key => $link) {
+
+        // Check for current item.
+        if ($link['mlid'] == $mlid->mlid) {
+          // Previous item.
+          if ($key >= 1) {
+            $previous['link_title'] = $links[$key - 1]['title'];
+            $previous['link_path'] = $links[$key - 1]['alias'];
+          }
+
+          // Next item.
+          if ($key < (count($links) - 1)) {
+            $next['link_title'] = $links[$key + 1]['title'];
+            $next['link_path'] = $links[$key + 1]['alias'];
+          }
+        }
+      }
+    }
+    if (!empty($previous)) {
+      $navigation['previous'] = $previous;
+    }
+    if (!empty($next)) {
+      $navigation['next'] = $next;
+    }
+  }
+
+  return $navigation;
+}
+
+/**
+ * Code adapted from https://www.drupal.org/project/menu_block/issues/2420637#comment-11985664
+ * Updated to handle multilingual content and work with MLH menu structure.
+ */
+function _mlh_base_loop_menu($menu_array, $mlid) {
+  if (empty($menu_array)) {
+    return;
+  }
+
+  global $language;
+
+  $links = array();
+  foreach ($menu_array as $menu_item) {
+    $hidden = $menu_item['link']['hidden'] == 1 || $menu_item['link']['access'] == 0 || !isset($menu_item['link']['i18n_menu']);
+    if (isset($menu_item['link']) && !$hidden) {
+      $tmp = explode('node/', $menu_item['link']['link_path']);
+      $alias = drupal_get_path_alias('node/' . $tmp[1]);
+      if (!empty($tmp[1])) {
+        $links[] = array(
+          'mlid' => $menu_item['link']['mlid'],
+          'title' => $menu_item['link']['link_title'],
+          'path' => $menu_item['link']['link_path'],
+          'alias' => $alias,
+          'hidden' => $menu_item['link']['hidden'] && !isset($menu_item['link']['i18n_menu']),
+        );
+      }
+    }
+
+    if (isset($menu_item['below']) && count($menu_item['below']) > 0) {
+      $child_links = _mlh_base_loop_menu($menu_item['below'], $mlid);
+      if ($child_links){
+        $links = array_merge($links, $child_links);
+      }
+    }
+  }
+
+  if (count($links) > 0) {
+    return $links;
+  }
+
+  return FALSE;
+}
+
+/**
+ * Get the config associated with the menu block.
+ *
+ * The config has this structure:
+ * [parent] => all different
+ * [title_link] => 0
+ * [admin_title] => all different
+ * [level] => 3 (or level = 2)
+ * [follow] => 0 (or follow = child)
+ * [depth] => 0 (or depth = 2)
+ * [depth_relative] => 0
+ * [expanded] => 0 (or expanded = 1)
+ * [sort] => 0
+ * [menu_name] => main-menu
+ * [parent_mlid] => all different
+ * [delta] => all different
+ *
+ * @todo Grab data from database instead of hardcoding.
+ */
+function _mlh_base_get_menu_block_config() {
+  global $language;
+  $config = array(
+    'title_link' => 0,
+    'admin_title' => 'Admin Title',
+    'level' => 3,
+    'follow' => 0,
+    'depth' => 0,
+    'depth_relative' => 0,
+    'expanded' => 0,
+    'sort' => 0,
+    'menu_name' => 'main-menu',
+  );
+  switch ($language->language) {
+  case 'es':
+    $config['parent'] = 'main-menu:149033';
+    $config['parent_mlid'] = 149033;
+    $config['delta'] = 35;
+    break;
+  case 'zh-hant':
+    $config['parent'] = 'main-menu:149038';
+    $config['parent_mlid'] = 149038;
+    $config['delta'] = 40;
+    break;
+  case 'ht':
+    $config['parent'] = 'main-menu:149037';
+    $config['parent_mlid'] = 149037;
+    $config['delta'] = 39;
+    break;
+  case 'pt':
+    $config['parent'] = 'main-menu:149036';
+    $config['parent_mlid'] = 149036;
+    $config['delta'] = 38;
+    break;
+  case 'ru':
+    $config['parent'] = 'main-menu:149035';
+    $config['parent_mlid'] = 149035;
+    $config['delta'] = 37;
+    break;
+  case 'vi':
+    $config['parent'] = 'main-menu:149034';
+    $config['parent_mlid'] = 149034;
+    $config['delta'] = 36;
+    break;
+  default:
+    $config['parent'] = 'main-menu:145032';
+    $config['parent_mlid'] = 145032;
+    $config['delta'] = 8;
+    break;
+  }
+  return $config;
 }
