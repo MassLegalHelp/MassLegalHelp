@@ -1,0 +1,372 @@
+17c17,19
+< define('SCANNER_STATUS_GO_REPLACE', 3);
+---
+> define('SCANNER_STATUS_GO_REPLACE', 3); // Not used anymore...
+> define('SCANNER_STATUS_END_REPLACE', 4);
+> 
+176c178
+<     elseif ($status == SCANNER_STATUS_GO_REPLACE) {
+---
+>     elseif ($status == SCANNER_STATUS_END_REPLACE) {
+178c180
+<       $results = scanner_execute('replace');
+---
+>       $results = $_SESSION['scanner_replace_results'];
+206a209
+>     unset($_SESSION['scanner_languages']);
+262a266
+>   $languages = isset($_SESSION['scanner_languages']) ? $_SESSION['scanner_languages'] : variable_get('scanner_languages', array());
+350a355,368
+>   
+>   
+>   // Extra options --------------------
+>   
+>   $form['options']['lang'] = array(
+>     '#type' => 'checkboxes',
+>     '#title' => t('Node Language'),
+>     '#options' => array(LANGUAGE_NONE => t('Language neutral')) + locale_language_list('name'),
+>     '#default_value' => $languages,
+>     '#description' => t("Specify the language of the nodes to modify. If no language is selected, all languages will be taken in consideration."),
+>   );
+>   
+>   // End extra options -----------------
+>   
+412a431,433
+>   $_SESSION['scanner_languages']  = $form_state['values']['lang'];
+>   
+>   
+452c473,474
+< 
+---
+>   $languages = $_SESSION['scanner_languages'];
+>   
+454a477,507
+>   $languages_txt = "";
+>   if ($languages && is_array($languages))
+>   {
+>         $language_codes = array();
+>         foreach ($languages as $language_code)
+>         {
+>             if ($language_code === 0) continue;
+>             $language_codes[] = $language_code;
+>         }
+>         
+>         
+>       if (count($language_codes) == 0)
+>       {
+>           $languages_txt = t("No language selected: search will be perfomed on nodes of all languages");
+>       }
+>       else
+>       {
+>           $all_languages = array(LANGUAGE_NONE => t('Language neutral')) + locale_language_list('name');
+>           
+>           $language_names = array();
+>           foreach ($language_codes as $locale_id)
+>           {
+>               $language_names[] = $all_languages[$locale_id]." (".$locale_id.")";
+>           }
+>           
+>           $language_names = join(", ", $language_names);
+>           $languages_txt = t("Replace will be perfomed on nodes of the following language: !languages", array("!languages" => $language_names));
+>       }
+>   }
+>   
+>   
+501a555,562
+>   
+>   if ($languages_txt) {
+>       $msg .= (
+>       '<div class="scanner-confirm">' .
+>       '  <label>' . t('Languages') . ':</label> ' . $languages_txt .
+>       '</div>'
+>     );
+>   }
+534c595,599
+<     $_SESSION['scanner_status'] = SCANNER_STATUS_GO_REPLACE;
+---
+>     $_SESSION['scanner_status'] = SCANNER_STATUS_GO_REPLACE; // Status never used...
+>     
+>     scanner_execute("replace");
+>     return;
+>     
+728a794
+>   $languages    = $_SESSION['scanner_languages'];
+791a858,861
+>   // If a replace is required, we will use a batch job...
+>   $operations = array(); 
+>     
+>     
+863a934,948
+>     
+>     if ($languages && is_array($languages))
+>     {
+>         $language_codes = array();
+>         foreach ($languages as $language_code)
+>         {
+>             if ($language_code === 0) continue;
+>             $language_codes[] = $language_code;
+>         }
+>         if (count($language_codes))
+>         {
+>             $query->condition('n.language', $language_codes, 'in');
+>         }
+>     }
+>     
+866c951,953
+<     $shutting_down = FALSE;
+---
+>     //$shutting_down = FALSE;
+>     
+>     
+877,904c964,991
+<       if (REQUEST_TIME >= ($start_time + $max_execution_time - 5)) {
+<         if (!$expanded) {
+<           if ($user->uid > 0) {
+<             $verbose = TRUE;
+<           }
+<           else {
+<             $verbose = FALSE;
+<           }
+<           if (_scanner_change_env('max_execution_time', '600', $verbose)) {
+<             drupal_set_message(t('Default max_execution_time too small and changed to 10 minutes.'), 'error');
+<             $max_execution_time = 600;
+<           }
+<           $expanded = TRUE;
+<         }
+<         // If expanded environment still running out of time, shutdown process.
+<         else {
+<           $shutting_down = TRUE;
+<           variable_set('scanner_partially_processed_' . $user->uid, $processed);
+<           variable_set('scanner_partial_undo_' . $user->uid, $undo_data);
+<           if ($searchtype == 'search') {
+<             drupal_set_message(t('Did not have enough time to complete search.'), 'error');
+<           }
+<           else {
+<             drupal_set_message(t('Did not have enough time to complete. Please re-submit replace'), 'error');
+<           }
+<           break 2;
+<         }
+<       }
+---
+> //      if (REQUEST_TIME >= ($start_time + $max_execution_time - 5)) {
+> //        if (!$expanded) {
+> //          if ($user->uid > 0) {
+> //            $verbose = TRUE;
+> //          }
+> //          else {
+> //            $verbose = FALSE;
+> //          }
+> //          if (_scanner_change_env('max_execution_time', '600', $verbose)) {
+> //            drupal_set_message(t('Default max_execution_time too small and changed to 10 minutes.'), 'error');
+> //            $max_execution_time = 600;
+> //          }
+> //          $expanded = TRUE;
+> //        }
+> //        // If expanded environment still running out of time, shutdown process.
+> //        else {
+> //          $shutting_down = TRUE;
+> //          variable_set('scanner_partially_processed_' . $user->uid, $processed);
+> //          variable_set('scanner_partial_undo_' . $user->uid, $undo_data);
+> //          if ($searchtype == 'search') {
+> //            drupal_set_message(t('Did not have enough time to complete search.'), 'error');
+> //          }
+> //          else {
+> //            drupal_set_message(t('Did not have enough time to complete. Please re-submit replace'), 'error');
+> //          }
+> //          break 2;
+> //        }
+> //      }
+973a1061
+>           
+979a1068,1160
+>         
+>         $operation_arguments = array();
+>         $operation_arguments["pathauto"] = $pathauto;
+>         $operation_arguments["nid"] = $row->nid;
+>         $operation_arguments["field"] = $field;
+>         $operation_arguments["field_label"] = $field_label;
+>         $operation_arguments["delta"] = $row->delta;
+>         $operation_arguments["content"] = $content;
+>         $operation_arguments["search"] = $search;
+>         $operation_arguments["search_php"] = "/$search_php/$flag";
+>         $operation_arguments["replace"] = $replace;
+>         
+>         
+>         $operations[] = array("scanner_execute_operation", $operation_arguments);
+>         
+>          
+>         
+>         
+>       }
+>     } // end foreach
+>   } // end foreach
+> 
+>   // If completed.
+> //  if (isset($shutting_down) && !$shutting_down) {
+> //    variable_del('scanner_partially_processed_' . $user->uid);
+> //    variable_del('scanner_partial_undo_' . $user->uid);
+> //  }
+> 
+>   if ($searchtype == 'search') {
+>     return theme('scanner_results', array('results' => $results));
+>   }
+>   else { // searchtype == 'replace'
+>       
+>       error_log("Operations: ".count($operations));
+>       
+>       $batch = array(
+>        'operations' => $operations,
+>        'finished' => 'scanner_execute_finished',
+>        );
+>        batch_set($batch);
+>        batch_process("admin/content/scanner");
+>   }
+> }
+> 
+> 
+> function scanner_execute_finished($success, $results, $operations)
+> {
+>     if ($success)
+>     {
+>         
+>         
+>         if (count($results["undo_data"])) {
+>           $id = db_insert('scanner')
+>                 ->fields(array(
+>                     'undo_data' => serialize($results["undo_data"]),
+>                     'undone' => 0,
+>                     'searched' => $results["search"],
+>                     'replaced' => $results["replace"],
+>                     'count' => count($results["undo_data"]),
+>                     'time' => REQUEST_TIME,
+>                   ))
+>                 ->execute();
+>         }
+> 
+>         $_SESSION['scanner_status'] = SCANNER_STATUS_END_REPLACE;
+>         $_SESSION['scanner_replace_results'] = theme('scanner_replace_results', array('results' => $results["results"]));
+>     }
+>     else
+>     {
+>         $error_operation = reset($operations);
+>         drupal_set_message(
+>           t('An error occurred while processing @operation with arguments : @args',
+>             array(
+>               '@operation' => $error_operation[0],
+>               '@args' => print_r($error_operation[0], TRUE),
+>             )
+>           )
+>         );
+>     }
+>     
+> }
+> 
+>         
+> function scanner_execute_operation($pathauto, $nid, $field, $field_label, $delta, $content, $search, $search_php, $replace, &$context)
+> {
+>         global $user;
+>         
+>         $node = node_load($nid);
+>         $matches = array();
+>         
+>         $context["results"]["search"] = $search;
+>         $context["results"]["replace"] =  $replace;
+>          
+996c1177
+<         $content_new = preg_replace("/$search_php/$flag", $replace, $content, -1, $hits);
+---
+>         $content_new = preg_replace($search_php, $replace, $content, -1, $hits);
+1000c1181,1184
+<           $node->{$matches[1]}[$node->language][$row->delta]['value'] = $content_new;
+---
+>           // Check if the language is set, otherwise use undefined...  
+>           $language = isset($node->{$matches[1]}[$node->language]) ? $node->language : LANGUAGE_NONE;
+>           
+>           $node->{$matches[1]}[$language][$delta]['value'] = $content_new;
+1002,1004c1186,1188
+<           if (isset($node->{$matches[1]}[$node->language][$row->delta]['summary'])) {
+<             $summary = $node->{$matches[1]}[$node->language][$row->delta]['summary'];
+<             $node->{$matches[1]}[$node->language][$row->delta]['summary'] = preg_replace("/$search_php/$flag", $replace, $summary, -1, $hits_summary);
+---
+>           if (isset($node->{$matches[1]}[$language][$delta]['summary'])) {
+>             $summary = $node->{$matches[1]}[$language][$delta]['summary'];
+>             $node->{$matches[1]}[$language][$delta]['summary'] = preg_replace($search_php, $replace, $summary, -1, $hits_summary);
+1012c1196,1202
+< 
+---
+>         
+>         
+>         if (!isset($context["results"]["undo_data"]))
+>         {
+>             $context["results"]["undo_data"] = array();
+>         }
+>         
+1015c1205
+<         if (!isset($undo_data[$node->nid]['new_vid'])) {
+---
+>         if (!isset($context["results"]["undo_data"][$node->nid]['new_vid'])) {
+1018c1208
+<           $undo_data[$node->nid]['old_vid'] = $node->vid;
+---
+>           $context["results"]["undo_data"][$node->nid]['old_vid'] = $node->vid;
+1022a1213,1218
+>         
+>         if (!isset($context["results"]["processed"]))
+>         {
+>             $context["results"]["processed"] = array();
+>         }
+>         
+1024c1220
+<         $processed[$field][$row->nid][$row->delta] = TRUE;
+---
+>         $context["results"]["processed"][$field][$nid][$delta] = TRUE;
+1027,1028c1223,1231
+<         $undo_data[$node->nid]['new_vid'] = $node->vid; // Now set to updated vid after node_save().
+<         $results[] = array(
+---
+>         $context["results"]["undo_data"][$node->nid]['new_vid'] = $node->vid; // Now set to updated vid after node_save().
+>         
+>         
+>         if (!isset($context["results"]["results"]))
+>         {
+>             $context["results"]["results"] = array();
+>         }
+>         
+>         $context["results"]["results"][] = array(
+1036,1064d1238
+<       }
+<     } // end foreach
+<   } // end foreach
+< 
+<   // If completed.
+<   if (isset($shutting_down) && !$shutting_down) {
+<     variable_del('scanner_partially_processed_' . $user->uid);
+<     variable_del('scanner_partial_undo_' . $user->uid);
+<   }
+< 
+<   if ($searchtype == 'search') {
+<     return theme('scanner_results', array('results' => $results));
+<   }
+<   else { // searchtype == 'replace'
+<     if (count($undo_data) && !$shutting_down) {
+<       $id = db_insert('scanner')
+<             ->fields(array(
+<                 'undo_data' => serialize($undo_data),
+<                 'undone' => 0,
+<                 'searched' => $search,
+<                 'replaced' => $replace,
+<                 'count' => count($undo_data),
+<                 'time' => REQUEST_TIME,
+<               ))
+<             ->execute();
+<     }
+< 
+<     return theme('scanner_replace_results', array('results' => $results));
+<   }
+1066a1241
+> 
+1364c1539
+< }
+\ No newline at end of file
+---
+> }

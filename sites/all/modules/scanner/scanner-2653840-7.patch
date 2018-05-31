@@ -1,0 +1,477 @@
+diff --git a/scanner.module b/scanner.module
+index cf40989..5b42061 100644
+--- a/scanner.module
++++ b/scanner.module
+@@ -14,7 +14,9 @@ define('SCANNER_REGEX_CHARS', '.\/+*?[^]$() {}=!<>|:');
+ //   and comes back again w/ the same session variables.
+ define('SCANNER_STATUS_GO_SEARCH', 1);
+ define('SCANNER_STATUS_GO_CONFIRM', 2);
+-define('SCANNER_STATUS_GO_REPLACE', 3);
++define('SCANNER_STATUS_GO_REPLACE', 3); // Not used anymore...
++define('SCANNER_STATUS_END_REPLACE', 4);
++
+ 
+ /**
+  * Implements hook_menu().
+@@ -173,9 +175,9 @@ function scanner_view() {
+     if ($status == SCANNER_STATUS_GO_CONFIRM) {
+       drupal_goto('admin/content/scanner/scan/confirm');
+     }
+-    elseif ($status == SCANNER_STATUS_GO_REPLACE) {
++    elseif ($status == SCANNER_STATUS_END_REPLACE) {
+       $resulttxt = '<a name="results"></a>' . t('Replacement Results');
+-      $results = scanner_execute('replace');
++      $results = $_SESSION['scanner_replace_results'];
+     }
+     else {
+       $resulttxt = t('Search Results');
+@@ -204,6 +206,7 @@ function scanner_view() {
+     unset($_SESSION['scanner_wholeword']);
+     unset($_SESSION['scanner_published']);
+     unset($_SESSION['scanner_pathauto']);
++    unset($_SESSION['scanner_languages']);
+     unset($_SESSION['scanner_regex']);
+     unset($_SESSION['scanner_terms']);
+     // Clear old status.
+@@ -260,6 +263,7 @@ function scanner_form($form, &$form_state) {
+   $regex = isset($_SESSION['scanner_regex']) ? $_SESSION['scanner_regex'] : variable_get('scanner_regex', 0);
+   $published = isset($_SESSION['scanner_published']) ? $_SESSION['scanner_published'] : variable_get('scanner_published', 1);
+   $pathauto = isset($_SESSION['scanner_pathauto']) ? $_SESSION['scanner_pathauto'] : variable_get('scanner_pathauto', 1);
++  $languages = isset($_SESSION['scanner_languages']) ? $_SESSION['scanner_languages'] : variable_get('scanner_languages', array());
+ 
+   if (isset($_SESSION['scanner_terms'])) {
+     $terms = $_SESSION['scanner_terms'];
+@@ -348,17 +352,24 @@ function scanner_form($form, &$form_state) {
+     '#default_value' => $pathauto,
+     '#description' => t("Prevent custom URL aliases from being overwritten with ones generated from Path Auto's URL alias patterns."),
+   );
++  $form['options']['lang'] = array(
++    '#type' => 'checkboxes',
++    '#title' => t('Node Language'),
++    '#options' => array(LANGUAGE_NONE => t('Language neutral')) + locale_language_list('name'),
++    '#default_value' => $languages,
++    '#description' => t("Specify the language of the nodes to modify. If no language is selected, all languages will be taken in consideration."),
++  );
+ 
+   $scanner_vocabularies = array_filter(variable_get('scanner_vocabulary', array()));
+ 
+-  if (count($scanner_vocabularies)) {
++  if (!empty($scanner_vocabularies)) {
+     $vocabularies = taxonomy_get_vocabularies();
+     $options = array();
+ 
+     foreach ($vocabularies as $vid => $vocabulary) {
+       if (in_array($vid, $scanner_vocabularies)) {
+         $tree = taxonomy_get_tree($vid);
+-        if ($tree && (count($tree) > 0)) {
++        if ($tree && !empty($tree)) {
+           $options[$vocabulary->name] = array();
+           foreach ($tree as $term) {
+             $options[$vocabulary->name][$term->tid] = str_repeat('-', $term->depth) . $term->name;
+@@ -410,6 +421,8 @@ function scanner_form_submit($form, &$form_state) {
+   $_SESSION['scanner_regex']     = $form_state['values']['regex'];
+   $_SESSION['scanner_published'] = $form_state['values']['published'];
+   $_SESSION['scanner_pathauto']  = $form_state['values']['pathauto'];
++  $_SESSION['scanner_languages']  = $form_state['values']['lang'];
++
+   if (isset($form_state['values']['terms'])) {
+     $_SESSION['scanner_terms']     = $form_state['values']['terms'];
+   }
+@@ -449,9 +462,34 @@ function scanner_confirm_form($form, &$form_state) {
+   $wholeword = $_SESSION['scanner_wholeword'];
+   $regex     = $_SESSION['scanner_regex'];
+   $mode      = $_SESSION['scanner_mode'];
++  $languages = $_SESSION['scanner_languages'];
+ 
+   $modetxt = ($mode) ? t('Case sensitive') : t('Not case sensitive: will replace any matches regardless of capitalization.');
+ 
++  $languages_txt = "";
++  if ($languages && is_array($languages)) {
++      $language_codes = array();
++      foreach ($languages as $language_code) {
++          if ($language_code !== 0)
++            $language_codes[] = $language_code;
++      }
++
++      if (empty($language_codes)) {
++          $languages_txt = t("No language selected: search will be perfomed on nodes of all languages");
++      }
++      else {
++          $all_languages = array(LANGUAGE_NONE => t('Language neutral')) + locale_language_list('name');
++
++          $language_names = array();
++          foreach ($language_codes as $locale_id) {
++              $language_names[] = $all_languages[$locale_id] . " (" . $locale_id . ")";
++          }
++
++          $language_names = join(", ", $language_names);
++          $languages_txt = t("Replace will be perfomed on nodes of the following language: !languages", array("!languages" => $language_names));
++      }
++  }
++
+   $msg = (
+     '<p>' . t('Are you sure you want to make the following replacement?') . '</p>' .
+     '<div class="scanner-confirm">' .
+@@ -500,6 +538,14 @@ function scanner_confirm_form($form, &$form_state) {
+     );
+   }
+ 
++  if ($languages_txt) {
++      $msg .= (
++      '<div class="scanner-confirm">' .
++      '  <label>' . t('Languages') . ':</label> ' . $languages_txt .
++      '</div>'
++    );
++  }
++
+   $form['warning'] = array(
+     '#type' => 'item',
+     '#markup' => $msg,
+@@ -531,7 +577,11 @@ function scanner_confirm_form_submit($form, &$form_state) {
+    buttons which need to invoke different validate or submit functionality
+    should have button-specific functions. */
+   if ($form_state['values']['op'] == t('Yes, Continue')) {
+-    $_SESSION['scanner_status'] = SCANNER_STATUS_GO_REPLACE;
++    $_SESSION['scanner_status'] = SCANNER_STATUS_GO_REPLACE; // Status never used...
++
++    scanner_execute("replace");
++    return;
++
+   }
+   else {
+     unset($_SESSION['scanner_status']);
+@@ -726,6 +776,7 @@ function scanner_execute($searchtype = 'search') {
+   $wholeword   = $_SESSION['scanner_wholeword'];
+   $regex       = $_SESSION['scanner_regex'];
+   $published   = $_SESSION['scanner_published'];
++  $languages    = $_SESSION['scanner_languages'];
+   $pathauto    = $_SESSION['scanner_pathauto'];
+   $terms       = isset($_SESSION['scanner_terms']) ? $_SESSION['scanner_terms'] : NULL;
+   $results     = NULL;
+@@ -775,7 +826,7 @@ function scanner_execute($searchtype = 'search') {
+ 
+   // If terms selected, then put together extra join and where clause.
+   $join = '';
+-  if (is_array($terms) && count($terms)) {
++  if (is_array($terms) && !empty($terms)) {
+     $terms_where = array();
+     $terms_params = array();
+     foreach ($terms as $term) {
+@@ -789,6 +840,9 @@ function scanner_execute($searchtype = 'search') {
+   $table_map = _scanner_get_selected_tables_map();
+   usort($table_map, '_scanner_compare_fields_by_name');
+ 
++  // If a replace is required, we will use a batch job...
++  $operations = array();
++
+   // Examine each field instance as chosen in settings.
+   foreach ($table_map as $map) {
+     $table = $map['table'];
+@@ -832,7 +886,7 @@ function scanner_execute($searchtype = 'search') {
+       // Must use vid and revision_id here. Make sure it saves as new revision.
+       $query->join('node', 'n', 't.' . $vid . ' = n.vid');
+     }
+-    if (is_array($terms) && count($terms)) {
++    if (is_array($terms) && !empty($terms)) {
+       $db_or = db_or();
+       $query->join('taxonomy_index', 'tx', 'n.nid = tx.nid');
+       foreach ($terms as $term) {
+@@ -861,9 +915,22 @@ function scanner_execute($searchtype = 'search') {
+     if ($published) {
+       $query->condition('n.status', '1', '=');
+     }
+-    $result = $query->execute();
+ 
+-    $shutting_down = FALSE;
++    if ($languages && is_array($languages))
++    {
++        $language_codes = array();
++        foreach ($languages as $language_code)
++        {
++            if ($language_code === 0) continue;
++            $language_codes[] = $language_code;
++        }
++        if (!empty($language_codes))
++        {
++            $query->condition('n.language', $language_codes, 'in');
++        }
++    }
++
++    $result = $query->execute();
+ 
+     // Perform the search or replace on each hit for the current field instance.
+     foreach ($result as $row) {
+@@ -872,39 +939,6 @@ function scanner_execute($searchtype = 'search') {
+       $matches = array();
+       $text = '';
+ 
+-      // Checking for possible timeout.
+-      // If within 5 seconds of timeout, attempt to expand environment.
+-      if (REQUEST_TIME >= ($start_time + $max_execution_time - 5)) {
+-        if (!$expanded) {
+-          if ($user->uid > 0) {
+-            $verbose = TRUE;
+-          }
+-          else {
+-            $verbose = FALSE;
+-          }
+-          if (_scanner_change_env('max_execution_time', '600', $verbose)) {
+-            drupal_set_message(t('Default max_execution_time too small and changed to 10 minutes.'), 'error');
+-            $max_execution_time = 600;
+-          }
+-          $expanded = TRUE;
+-        }
+-        // If expanded environment still running out of time, shutdown process.
+-        else {
+-          $shutting_down = TRUE;
+-          variable_set('scanner_partially_processed_' . $user->uid, $processed);
+-          variable_set('scanner_partial_undo_' . $user->uid, $undo_data);
+-          if ($searchtype == 'search') {
+-            drupal_set_message(t('Did not have enough time to complete search.'), 'error');
+-          }
+-          else {
+-            drupal_set_message(t('Did not have enough time to complete. Please re-submit replace'), 'error');
+-          }
+-          break 2;
+-        }
+-      }
+-
+-      $node = node_load($row->nid);
+-
+       // Search.
+       if ($searchtype == 'search') {
+         $regexstr = "/$search_php/$flag";
+@@ -969,99 +1003,166 @@ function scanner_execute($searchtype = 'search') {
+           'text' => $text,
+         );
+       }
++
+       // Replace (and check to see if already processed).
+       elseif (!isset($processed[$field][$row->nid][$row->delta])) {
+         if (!empty($field_collection_parents)) {
+           drupal_set_message(
+             t('[%search] not replaced in @field of node @nid - replacement not yet implemented for fields within field collections.',
+-              array('%search' => $search, '@field' => $field_label, '@nid' => $node->nid)), 'warning');
++              array('%search' => $search, '@field' => $field_label, '@nid' => $row->nid)), 'warning');
+           continue;
+         }
+-        // Check first if pathauto_persist, a newer version of pathauto, or some
+-        // other module has already set $node->path['pathauto']. If not, set it
+-        // to false (to prevent pathauto from touching the node during node_save())
+-        // if a custom alias exists that doesn't follow pathauto rules.
+-        if (!isset($node->path['pathauto']) && module_exists('pathauto') && $pathauto) {
+-          list($id, , $bundle) = entity_extract_ids('node', $node);
+-          if (!empty($id)) {
+-            module_load_include('inc', 'pathauto');
+-            $uri = entity_uri('node', $node);
+-            $path = drupal_get_path_alias($uri['path']);
+-            $pathauto_alias = pathauto_create_alias('node', 'return', $uri['path'], array('node' => $node), $bundle);
+-            $node->path['pathauto'] = ($path != $uri['path'] && $path == $pathauto_alias);
+-          }
+-        }
+ 
+-        $hits = 0;
+-        $content_new = preg_replace("/$search_php/$flag", $replace, $content, -1, $hits);
+-        preg_match('/(.+)_value$/', $field, $matches);
+-        if (!empty($matches[0])) {
+-          // Text Field or Text Area.
+-          $node->{$matches[1]}[$node->language][$row->delta]['value'] = $content_new;
+-          // Summary.
+-          if (isset($node->{$matches[1]}[$node->language][$row->delta]['summary'])) {
+-            $summary = $node->{$matches[1]}[$node->language][$row->delta]['summary'];
+-            $node->{$matches[1]}[$node->language][$row->delta]['summary'] = preg_replace("/$search_php/$flag", $replace, $summary, -1, $hits_summary);
+-            $hits += $hits_summary;
+-          }
+-        }
+-        else {
+-           // Other type such as a Title.
+-          $node->$field = $content_new;
+-        }
++        $operation_arguments = array();
++        $operation_arguments["pathauto"] = $pathauto;
++        $operation_arguments["nid"] = $row->nid;
++        $operation_arguments["field"] = $field;
++        $operation_arguments["field_label"] = $field_label;
++        $operation_arguments["delta"] = $row->delta;
++        $operation_arguments["content"] = $content;
++        $operation_arguments["search"] = $search;
++        $operation_arguments["search_php"] = "/$search_php/$flag";
++        $operation_arguments["replace"] = $replace;
++
++        $operations[] = array("scanner_execute_operation", $operation_arguments);
+ 
+-        // A revision only created for the first change of the node.
+-        // Subsequent changes of the same node do not generate additional revisions.
+-        if (!isset($undo_data[$node->nid]['new_vid'])) {
+-          $node->revision = TRUE;
+-          $node->log = t('@name replaced %search with %replace via Scanner Search and Replace module.', array('@name' => $user->name, '%search' => $search, '%replace' => $replace));
+-          $undo_data[$node->nid]['old_vid'] = $node->vid;
+-        }
+ 
+-        node_save($node);
+ 
+-        // Array to log completed fields in case of shutdown.
+-        $processed[$field][$row->nid][$row->delta] = TRUE;
+ 
+-        // Undo data construction.
+-        $undo_data[$node->nid]['new_vid'] = $node->vid; // Now set to updated vid after node_save().
+-        $results[] = array(
+-          'title' => $node->title,
+-          'type' => $node->type,
+-          'count' => $hits,
+-          'field' => $field,
+-          'field_label' => $field_label,
+-          'nid' => $node->nid,
+-        );
+       }
+     } // end foreach
+   } // end foreach
+ 
+-  // If completed.
+-  if (isset($shutting_down) && !$shutting_down) {
+-    variable_del('scanner_partially_processed_' . $user->uid);
+-    variable_del('scanner_partial_undo_' . $user->uid);
+-  }
+-
+   if ($searchtype == 'search') {
+     return theme('scanner_results', array('results' => $results));
+   }
+   else { // searchtype == 'replace'
+-    if (count($undo_data) && !$shutting_down) {
+-      $id = db_insert('scanner')
+-            ->fields(array(
+-                'undo_data' => serialize($undo_data),
+-                'undone' => 0,
+-                'searched' => $search,
+-                'replaced' => $replace,
+-                'count' => count($undo_data),
+-                'time' => REQUEST_TIME,
+-              ))
+-            ->execute();
++      error_log("Operations: ".count($operations));
++
++      $batch = array(
++       'operations' => $operations,
++       'finished' => 'scanner_execute_finished',
++       );
++       batch_set($batch);
++       batch_process("admin/content/scanner");
++  }
++}
++
++
++function scanner_execute_finished($success, $results, $operations) {
++    if ($success) {
++        if (!empty($results["undo_data"])) {
++          $id = db_insert('scanner')
++                ->fields(array(
++                    'undo_data' => serialize($results["undo_data"]),
++                    'undone' => 0,
++                    'searched' => $results["search"],
++                    'replaced' => $results["replace"],
++                    'count' => count($results["undo_data"]),
++                    'time' => REQUEST_TIME,
++                  ))
++                ->execute();
++        }
++
++        $_SESSION['scanner_status'] = SCANNER_STATUS_END_REPLACE;
++        $_SESSION['scanner_replace_results'] = theme('scanner_replace_results', array('results' => $results["results"]));
++    }
++    else {
++        $error_operation = reset($operations);
++        drupal_set_message(
++          t('An error occurred while processing @operation with arguments : @args',
++            array(
++              '@operation' => $error_operation[0],
++              '@args' => print_r($error_operation[0], TRUE),
++            )
++          )
++        );
+     }
++}
+ 
+-    return theme('scanner_replace_results', array('results' => $results));
+-  }
++
++function scanner_execute_operation($pathauto, $nid, $field, $field_label, $delta, $content, $search, $search_php, $replace, &$context) {
++    global $user;
++
++    $node = node_load($nid);
++    $matches = array();
++
++    $context["results"]["search"] = $search;
++    $context["results"]["replace"] =  $replace;
++
++    // Check first if pathauto_persist, a newer version of pathauto, or some
++    // other module has already set $node->path['pathauto']. If not, set it
++    // to false (to prevent pathauto from touching the node during node_save())
++    // if a custom alias exists that doesn't follow pathauto rules.
++    if (!isset($node->path['pathauto']) && module_exists('pathauto') && $pathauto) {
++      list($id, , $bundle) = entity_extract_ids('node', $node);
++      if (!empty($id)) {
++        module_load_include('inc', 'pathauto');
++        $uri = entity_uri('node', $node);
++        $path = drupal_get_path_alias($uri['path']);
++        $pathauto_alias = pathauto_create_alias('node', 'return', $uri['path'], array('node' => $node), $bundle);
++        $node->path['pathauto'] = ($path != $uri['path'] && $path == $pathauto_alias);
++      }
++    }
++
++    $hits = 0;
++    $content_new = preg_replace($search_php, $replace, $content, -1, $hits);
++    preg_match('/(.+)_value$/', $field, $matches);
++    if (!empty($matches[0])) {
++      // Text Field or Text Area.
++      // Check if the language is set, otherwise use undefined...
++      $language = isset($node->{$matches[1]}[$node->language]) ? $node->language : LANGUAGE_NONE;
++
++      $node->{$matches[1]}[$language][$delta]['value'] = $content_new;
++      // Summary.
++      if (isset($node->{$matches[1]}[$language][$delta]['summary'])) {
++        $summary = $node->{$matches[1]}[$language][$delta]['summary'];
++        $node->{$matches[1]}[$language][$delta]['summary'] = preg_replace($search_php, $replace, $summary, -1, $hits_summary);
++        $hits += $hits_summary;
++    }
++    else {
++       // Other type such as a Title.
++      $node->$field = $content_new;
++    }
++
++
++    if (!isset($context["results"]["undo_data"])) {
++        $context["results"]["undo_data"] = array();
++    }
++
++    // A revision only created for the first change of the node.
++    // Subsequent changes of the same node do not generate additional revisions.
++    if (!isset($context["results"]["undo_data"][$node->nid]['new_vid'])) {
++      $node->revision = TRUE;
++      $node->log = t('@name replaced %search with %replace via Scanner Search and Replace module.', array('@name' => $user->name, '%search' => $search, '%replace' => $replace));
++      $context["results"]["undo_data"][$node->nid]['old_vid'] = $node->vid;
++    }
++
++    node_save($node);
++
++    if (!isset($context["results"]["processed"])) {
++        $context["results"]["processed"] = array();
++    }
++
++    // Array to log completed fields in case of shutdown.
++    $context["results"]["processed"][$field][$nid][$delta] = TRUE;
++
++    // Undo data construction.
++    $context["results"]["undo_data"][$node->nid]['new_vid'] = $node->vid; // Now set to updated vid after node_save().
++
++    if (!isset($context["results"]["results"])) {
++        $context["results"]["results"] = array();
++    }
++
++    $context["results"]["results"][] = array(
++      'title' => $node->title,
++      'type' => $node->type,
++      'count' => $hits,
++      'field' => $field,
++      'field_label' => $field_label,
++      'nid' => $node->nid,
++    );
