@@ -97,7 +97,7 @@ function generate_content(&$list) {
 	$title = ' MCLE ($9.95)';
 	
 	switch ($guideName["guide"]) {
-	case 'food-stamp-(snap)-advocacy-guide':
+	case 'food-stamp-advocacy-guide':
 		$href = variable_get('hard_copy_url_snap', '#url-snap');
 		break;
 	case 'tafdc-advocacy-guide':
