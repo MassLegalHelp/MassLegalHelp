@@ -6,3 +6,6 @@ config:
 proxy:
   appserver:
     - www.mlri-mlh.lndo.site
+services:
+  database:
+    type: mysql:5.7
