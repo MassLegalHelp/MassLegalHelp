@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the MLH Backups feature.
+ */
+
+include_once 'mlh_backups.features.inc';
