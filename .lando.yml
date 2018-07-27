@@ -3,8 +3,11 @@ recipe: drupal7
 config:
   docroot: '.'
   php: '5.6'
+  conf:
+    php: php.ini
 proxy:
   appserver:
+    - mlri-mlh.lndo.site
     - www.mlri-mlh.lndo.site
 services:
   database:
