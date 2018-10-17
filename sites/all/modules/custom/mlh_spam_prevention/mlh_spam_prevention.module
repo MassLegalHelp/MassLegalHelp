@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the MLH Spam Prevention feature.
+ */
+
+include_once 'mlh_spam_prevention.features.inc';
