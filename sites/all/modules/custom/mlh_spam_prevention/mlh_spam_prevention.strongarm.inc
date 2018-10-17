@@ -118,34 +118,6 @@ function mlh_spam_prevention_strongarm() {
   $strongarm = new stdClass();
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
-  $strongarm->name = 'google_captcha_private_key';
-  $strongarm->value = '6LdorAMTAAAAAPL_rIVQVka3yyeJRwYSkRoION7h';
-  $export['google_captcha_private_key'] = $strongarm;
-
-  $strongarm = new stdClass();
-  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
-  $strongarm->api_version = 1;
-  $strongarm->name = 'google_captcha_site_key';
-  $strongarm->value = '6LdorAMTAAAAACLh7PdA3bAwMa_XeJPmhHvsiBRY';
-  $export['google_captcha_site_key'] = $strongarm;
-
-  $strongarm = new stdClass();
-  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
-  $strongarm->api_version = 1;
-  $strongarm->name = 'recaptcha_secret_key';
-  $strongarm->value = '6LehXHUUAAAAAHPa9gII_S7PlLw_B_ZPIOztLtJ7';
-  $export['recaptcha_secret_key'] = $strongarm;
-
-  $strongarm = new stdClass();
-  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
-  $strongarm->api_version = 1;
-  $strongarm->name = 'recaptcha_site_key';
-  $strongarm->value = '6LehXHUUAAAAAAn1E2AfRyZm-6oIFtCc2ovyN_Nt';
-  $export['recaptcha_site_key'] = $strongarm;
-
-  $strongarm = new stdClass();
-  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
-  $strongarm->api_version = 1;
   $strongarm->name = 'recaptcha_size';
   $strongarm->value = '';
   $export['recaptcha_size'] = $strongarm;
