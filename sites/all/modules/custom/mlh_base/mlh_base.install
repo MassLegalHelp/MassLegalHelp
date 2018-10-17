@@ -1,0 +1,17 @@
+<?php
+/**
+ * @file
+ * Update scripts for the system.
+ */
+
+/**
+ * Enable recaptcha feature
+ */
+function mlh_base_update_7001(&$sandbox) {
+  $enable_list = array('recaptcha', 'mlh_spam_prevention');
+  if (!module_enable($enable_list, true)) {
+    throw new DrupalUpdateException('One of the following modules did not enable: ' . implode(',', $enable_list));
+  }
+
+  features_revert_module('mlh_spam_prevention');
+}
