@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the MLH General feature.
+ */
+
+include_once 'mlh_general.features.inc';
