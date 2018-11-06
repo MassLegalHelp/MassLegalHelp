@@ -1,0 +1,36 @@
+diff --git a/webform_submissions_multiple_delete.module b/webform_submissions_multiple_delete.module
+index 55eae26..eed791a 100644
+--- a/webform_submissions_multiple_delete.module
++++ b/webform_submissions_multiple_delete.module
+@@ -48,13 +48,22 @@ function webform_submissions_multiple_delete_form($form, $form_state, $node) {
+       array('data' => t('Submitted'), 'field' => 'submitdate'),
+     );
+ 
++    // Get component count.
++    $componentCount = db_select('webform_component', 'wc')
++      ->fields('wc', array('cid'))
++      ->condition('wc.nid', $node->nid)
++      ->countQuery()
++      ->execute()
++      ->fetchField();
++    
+     $rows = array();
+     // Looping for filling the table rows.
+-    $query = db_select('webform_submissions', 'submission');
++    $query = db_select('webform_submissions', 'submission')->extend('PagerDefault')->extend('TableSort');
+     $query->join('webform_submitted_data', 'wsd', 'submission.sid = wsd.sid');
+     $query->fields('submission', array('sid', 'nid', 'uid', 'submitted', 'serial'));
+     $query->fields('wsd', array('data'));
+     $query->condition('submission.nid', $node->nid);
++    $query->limit(50 * $componentCount);
+     $query->orderBy('serial', 'DESC');
+     $result = $query->execute()->fetchAll();
+     foreach ($result as $data) {
+@@ -77,6 +86,7 @@ function webform_submissions_multiple_delete_form($form, $form_state, $node) {
+       '#options' => $rows,
+       '#empty' => t('No content available.'),
+     );
++    $form['table_pager'] = array('#theme' => 'pager');
+     $form['delete_submit'] = array(
+       '#type' => 'submit',
+       '#value' => t('Delete'),

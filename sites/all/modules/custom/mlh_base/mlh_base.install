@@ -27,3 +27,98 @@ function mlh_base_update_7002(&$sandbox) {
 
   features_revert_module('mlh_general');
 }
+
+/**
+ * Remove submissions containing markup from contact us webform.
+ */
+function mlh_base_update_7003(&$sandbox) {
+  if(!isset($sandbox['progress'])){
+    $sandbox['progress'] = 0;
+    $sandbox['last_sid'] = 0;
+    $sandbox['limit'] = 250;
+    $sandbox['max'] = db_query('SELECT COUNT(sid) FROM {webform_submitted_data} where nid = 29382 and cid = 6 ')->fetchField() - 1;
+    $sandbox['deleted_count'] = 0;
+  }
+  $query = db_query(
+    "SELECT
+        sid,
+        data
+    FROM `webform_submitted_data`
+    WHERE
+      nid = 29382
+      AND cid = 6
+      AND sid > ${sandbox['last_sid']}
+    ORDER BY sid asc
+    LIMIT ${sandbox['limit']}"
+  );
+
+  while ($this_result = $query->fetchAssoc()) {
+    $sandbox['progress']++;
+    $message = $this_result['data'];
+    $sandbox['last_sid'] = $this_result['sid'];
+    if (strip_tags($message) != $message) {
+      // Deleting the data.
+      db_delete('webform_submitted_data')
+        ->condition('sid', $this_result['sid'])
+        ->execute();
+      db_delete('webform_submissions')
+        ->condition('sid', $this_result['sid'])
+        ->execute();
+      $sandbox['deleted_count']++;
+    }
+  }
+
+  $sandbox['#finished'] = empty($sandbox['max']) ? 1 : ($sandbox['progress'] / $sandbox['max']) >= 1;
+  if ($sandbox['#finished']) {
+    drupal_set_message(t('%count submissions have been deleted that contained markup.',
+      array('%count' => $sandbox['deleted_count'])));
+  }
+}
+
+/**
+ * Remove submissions from contact us webform not directed at mlh domain.
+ */
+function mlh_base_update_7004(&$sandbox) {
+  if(!isset($sandbox['progress'])){
+    $sandbox['progress'] = 0;
+    $sandbox['last_sid'] = 0;
+    $sandbox['limit'] = 250;
+    $sandbox['max'] = db_query('SELECT COUNT(sid) FROM {webform_submitted_data} where nid = 29382 and cid = 7')->fetchField() - 1;
+    $sandbox['deleted_count'] = 0;
+  }
+  $query = db_query(
+    "SELECT
+        sid,
+        data
+    FROM `webform_submitted_data`
+    WHERE
+      nid = 29382
+      AND cid = 7
+      AND sid > ${sandbox['last_sid']}
+    ORDER BY sid asc
+    LIMIT ${sandbox['limit']}"
+  );
+
+  while ($this_result = $query->fetchAssoc()) {
+    $sandbox['progress']++;
+    $data = $this_result['data'];
+    $sandbox['last_sid'] = $this_result['sid'];
+
+    if (!strpos($data, 'masslegalhelp.org') && !strpos($data, 'google.com')) {
+      // Deleting the data.
+      db_delete('webform_submitted_data')
+        ->condition('sid', $this_result['sid'])
+        ->execute();
+      db_delete('webform_submissions')
+        ->condition('sid', $this_result['sid'])
+        ->execute();
+      $sandbox['deleted_count']++;
+    }
+  }
+
+  $sandbox['#finished'] = empty($sandbox['max']) ? 1 : ($sandbox['progress'] / $sandbox['max']) >= 1;
+  if ($sandbox['#finished']) {
+    drupal_set_message(t('%count submissions have been deleted that were not referring to masslegalhelp.org or google.com.',
+      array('%count' => $sandbox['deleted_count'])));
+  }
+}
