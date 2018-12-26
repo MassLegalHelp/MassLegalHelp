@@ -67,6 +67,14 @@ function mlh_general_strongarm() {
       'check' => 'always',
       'notes' => '',
     ),
+    'cloudflare' => array(
+      'check' => 'always',
+      'notes' => '',
+    ),
+    'cloudflare_cc' => array(
+      'check' => 'always',
+      'notes' => '',
+    ),
     'crumbs' => array(
       'check' => 'always',
       'notes' => '',
@@ -248,8 +256,8 @@ function mlh_general_strongarm() {
       'notes' => '',
     ),
     'responsive_menus' => array(
-      'check' => 'always',
-      'notes' => '',
+      'check' => '7.x-1.7',
+      'notes' => 'Patched 7.x-1.5 for SA-CONTRIB-2018-079',
     ),
     'rules' => array(
       'check' => 'always',
