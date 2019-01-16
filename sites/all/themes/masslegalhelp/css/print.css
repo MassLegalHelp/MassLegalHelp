@@ -89,4 +89,10 @@
     visibility: hidden;
     display: none;
   }
+
+  #content {
+    column-count: 2;
+    -webkit-column-count: 2;
+    -moz-column-count: 2;
+  }
 }
