@@ -75,6 +75,12 @@ body {
 	display: none;
 }
 
+.print-content {
+  column-count: 2;
+  -webkit-column-count: 2;
+  -moz-column-count: 2;
+}
+
 /*
 #credits {
 	font-size: 9pt;
