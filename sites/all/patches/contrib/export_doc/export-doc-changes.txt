@@ -1,0 +1,3 @@
+change line 86 to include node title
+        old: $filename = "node-" . $node->nid . ".doc"; 
+		new: $filename = $node->title. "-".$node->nid . ".doc";
