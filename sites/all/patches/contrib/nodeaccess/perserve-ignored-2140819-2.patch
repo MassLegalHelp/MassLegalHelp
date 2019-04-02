@@ -1,0 +1,42 @@
+diff --git a/nodeaccess.module b/nodeaccess.module
+index 38905dd..445dcbf 100644
+--- a/nodeaccess.module
++++ b/nodeaccess.module
+@@ -744,6 +744,37 @@ function nodeaccess_node_access_records($node) {
+     while ($row = $result->fetchAssoc()) {
+       $grants[] = $row;
+     }
++
++    // Add defaults for roles not displayed in the form:
++    if (variable_get('nodeaccess-preserve', TRUE)) {
++      $allowed_roles = variable_get('nodeaccess-roles', array());
++
++      foreach ($default as $default_grant) {
++        // Only apply grants for hidden roles:
++        if (isset($allowed_roles[$default_grant['gid']]) && $allowed_roles[$default_grant['gid']]) {
++          continue;
++        }
++
++        // Ignore empty defaults:
++        if (!$default_grant['grant_view'] && !$default_grant['grant_update'] && !$default_grant['grant_delete']) {
++          continue;
++        }
++
++        // See if we have to use the default:
++        $use_default = TRUE;
++        foreach ($grants as $grant) {
++          if ($grant['realm'] == $default_grant['realm'] &&
++              $grant['gid'] == $default_grant['gid']) {
++            $use_default = FALSE;
++            break;
++          }
++        }
++
++        if ($use_default) {
++          $grants[] = $default_grant;
++        }
++      }
++    }
+   }
+ 
+   // Apply author grants.

@@ -1,0 +1,13 @@
+diff --git a/nodeaccess.module b/nodeaccess.module
+index 19335d2..eb43504 100644
+--- a/nodeaccess.module
++++ b/nodeaccess.module
+@@ -835,7 +835,7 @@ function nodeaccess_node_type_insert($info) {
+ function nodeaccess_get_role_aliases() {
+   $aliases = array();
+   $query = db_select('role', 'r');
+-  $query->join('nodeaccess_role_alias', 'a', 'r.rid = a.rid');
++  $query->leftJoin('nodeaccess_role_alias', 'a', 'r.rid = a.rid');
+   $query->fields('r', array('rid', 'name'));
+   $query->addField('a', 'name', 'alias');
+   $query->addField('a', 'weight');
