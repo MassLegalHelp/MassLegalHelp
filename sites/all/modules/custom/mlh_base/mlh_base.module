@@ -1,8 +1,8 @@
-<?php
+<?php 
 
 /**
  * Base functionality for the Mass Legal Help site.
- */
+ */ 
 
 /**
  * Implements hook_token_info().
@@ -172,7 +172,6 @@ function mlh_base_block_view($delta = '') {
 
 /**
  * Code adapted from https://www.drupal.org/project/menu_block/issues/2420637#comment-11985664
- * Updated to handle multilingual content and work with MLH menu structure.
  */
 function _mlh_base_node_pager_navigation() {
   global $language;
@@ -182,7 +181,7 @@ function _mlh_base_node_pager_navigation() {
     // Get the menu link id for the given node id and language.
     $sql = "SELECT mlid
       FROM {menu_links}
-      WHERE link_path = :path AND
+      WHERE link_path = :path AND 
       module = 'menu' AND
       (language = :language OR
        language = 'und')
@@ -198,6 +197,7 @@ function _mlh_base_node_pager_navigation() {
 
       // Load the menu tree from menu block.
       $config = _mlh_base_get_menu_block_config();
+
       $menu = menu_tree_block_data($config);
 
       // Loop and flatten the menu hierarchy into a single array.
@@ -238,9 +238,8 @@ function _mlh_base_node_pager_navigation() {
 
 /**
  * Code adapted from https://www.drupal.org/project/menu_block/issues/2420637#comment-11985664
- * Updated to handle multilingual content and work with MLH menu structure.
  */
-function _mlh_base_loop_menu($menu_array, $mlid) {
+function _mlh_base_loop_menu($menu_array, $mlid){
   if (empty($menu_array)) {
     return;
   }
@@ -282,7 +281,6 @@ function _mlh_base_loop_menu($menu_array, $mlid) {
 /**
  * Get the config associated with the menu block.
  *
- * The config has this structure:
  * [parent] => all different
  * [title_link] => 0
  * [admin_title] => all different
@@ -308,44 +306,51 @@ function _mlh_base_get_menu_block_config() {
     'depth' => 0,
     'depth_relative' => 0,
     'expanded' => 0,
-    'sort' => 0,
-    'menu_name' => 'main-menu',
+    'sort' => 0,    
+	'menu_name' => 'main-menu',
   );
   switch ($language->language) {
   case 'es':
-    $config['parent'] = 'main-menu:149033';
-    $config['parent_mlid'] = 149033;
+    $config['parent'] = 'menu-spanish-main-menu:154416';
+    $config['parent_mlid'] = 154416;
     $config['delta'] = 35;
+	$config['menu_name'] = 'menu-spanish-main-menu';
     break;
   case 'zh-hant':
-    $config['parent'] = 'main-menu:149038';
-    $config['parent_mlid'] = 149038;
+    $config['parent'] = 'menu-chinese-traditional-main-me:154421';
+    $config['parent_mlid'] = 154421;
     $config['delta'] = 40;
+	$config['menu_name'] = 'menu-chinese-traditional-main-me';
     break;
   case 'ht':
-    $config['parent'] = 'main-menu:149037';
-    $config['parent_mlid'] = 149037;
+    $config['parent'] = 'menu-haitian-creole-main-menu:154413';
+    $config['parent_mlid'] = 154413;
     $config['delta'] = 39;
+	$config['menu_name'] = 'menu-haitian-creole-main-menu';
     break;
   case 'pt':
-    $config['parent'] = 'main-menu:149036';
-    $config['parent_mlid'] = 149036;
+    $config['parent'] = 'menu-portuguese-main-menu:154419';
+    $config['parent_mlid'] = 154419;
     $config['delta'] = 38;
+	$config['menu_name'] = 'menu-portuguese-main-menu';
     break;
   case 'ru':
-    $config['parent'] = 'main-menu:149035';
-    $config['parent_mlid'] = 149035;
+    $config['parent'] = 'menu-russian-main-menu:154418';
+    $config['parent_mlid'] = 154418;
     $config['delta'] = 37;
+	$config['menu_name'] = 'menu-russian-main-menu';
     break;
   case 'vi':
-    $config['parent'] = 'main-menu:149034';
-    $config['parent_mlid'] = 149034;
+    $config['parent'] = 'menu-vietnamese-main-menu:154417';
+    $config['parent_mlid'] = 154417;
     $config['delta'] = 36;
+	$config['menu_name'] = 'menu-vietnamese-main-menu';
     break;
   default:
-    $config['parent'] = 'main-menu:145032';
-    $config['parent_mlid'] = 145032;
+    $config['parent'] = 'main-menu:154408';
+    $config['parent_mlid'] = 154408;
     $config['delta'] = 8;
+	$config['menu_name'] = 'main-menu';
     break;
   }
   return $config;
