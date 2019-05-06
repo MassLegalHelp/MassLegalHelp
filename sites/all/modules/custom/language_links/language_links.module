@@ -384,33 +384,36 @@ function tell_a_friend_thank_you($nid, $sid) {
   return $page_detail;
 }
 
+// Comments added on 5/2/2019: this function is used to display various left pane blocks on the // panelizer according to the block's language and menu level. Modified menu_item values below
+// for non-English lanuages to reflect the newly created (4/2019) Main Menu names.
+
+// This function returns True only for one language and only if the menu level is 3 (i.e. on the // subject levle, like income and beneift). For all others, it returns False.
 function get_menu_level() {
   global $language;
   if ($language->language == 'en') {
     $menu_item = 'main-menu';
   }
   if ($language->language == 'pt') {
-    $menu_item = 'menu-portuguese';
+    $menu_item = 'menu-portuguese-main-menu';
   }
   if ($language->language == 'vi') {
-    $menu_item = 'menu-vietnamese';
+    $menu_item = 'menu-vietnamese-main-menu';
   }
   if ($language->language == 'es') {
-    $menu_item = 'menu-spanish';
+    $menu_item = 'menu-spanish-main-menu';
   }
   if ($language->language == 'ru') {
-    $menu_item = 'menu-russian';
+    $menu_item = 'menu-russian-main-menu';
   }
   if ($language->language == 'ht') {
-    $menu_item = 'menu--haitian-creole';
+    $menu_item = 'menu-haitian-creole-main-menu';
   }
   if ($language->language == 'zh-hant') {
-    $menu_item = 'menu-chinese-traditional';
+    $menu_item = 'menu-chinese-traditional-main-me';
   }
   if ($language->language == 'zh-hans') {
-    $menu_item = 'menu-chinese-simplified';
+    $menu_item = 'menu-chinese-simplified-main-men';
   }
-  $menu_item = 'main-menu';
 
   $tree = menu_tree_page_data($menu_item);
   $level = 0;
