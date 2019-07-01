@@ -1,0 +1,5 @@
+name = MLH Translation UI
+core = 7.x
+version =1.0
+package = Custom
+description = Overrides node edit form to prevent selection of problematic options. During install it will delete any i18n translation sets and update menu_links to be neutral.
