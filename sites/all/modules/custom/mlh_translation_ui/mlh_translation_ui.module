@@ -1,0 +1,10 @@
+<?php
+
+function mlh_translation_ui_form_alter(&$form, &$form_state, $form_id) {
+  if (isset($form['type']) && $form['type']['#value'] . '_node_form' == $form_id) {
+    $form['menu']['link']['tset']['#title'] = "This site uses menu items placed into language-specific menus so this option has been disabled.";
+    $form['menu']['link']['tset']['#description'] = "";
+    $form['menu']['link']['tset']['#disabled'] = TRUE;
+    $form['menu']['link']['tset']['#default_value'] = FALSE;
+  }
+}

@@ -1,0 +1,15 @@
+<?php
+
+function mlh_translation_ui_install() {
+  db_update('system')
+    ->fields(array('weight' => 20))
+    ->condition('name', 'mlh_translation_ui', '=')
+    ->execute();
+
+  db_update('menu_links')
+    ->fields(array('i18n_tsid' => 0, 'language' => 'und'))
+    ->execute();
+
+  db_delete('i18n_translation_set')
+    ->execute();
+}
