@@ -355,3 +355,40 @@ function _mlh_base_get_menu_block_config() {
   }
   return $config;
 }
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function mlh_base_form_page_node_form_alter(&$form, &$form_state, $form_id) {
+  // Default the menu translation checkbox to enabled.
+  $form['menu']['link']['tset']['#default_value'] = TRUE;
+
+  // Note: The following code is optional and could be removed if you want.
+  // Sync the actual menu link title with the field that should have the same
+  // information. This is to make translation easier for language-specific menus.
+  $node = $form['#node'];
+  // Actual menu item for this node.
+  $actual_menu_link_title = isset($node->menu['link_title']) ? $node->menu['link_title'] : NULL;
+  // Field menu item to sync. 
+  // @fixme Change field_menu_link_text to the name of the new field.
+  $field_menu_link_title = isset($node->field_menu_link_text[$node->language][0]['value']) ? $node->field_menu_link_text[$node->language][0]['value'] : NULL;
+  if (empty($field_menu_link_title) && !empty($actual_menu_link_title) && isset($form['field_menu_link_text'])) {
+    $form['field_menu_link_text'][$node->language][0]['value']['#default_value'] = $actual_menu_link_title;
+  }
+  // Add custom validate function to check field_menu_link_text.
+  array_unshift($form['#validate'], 'mlh_base_menu_link_sync_validate');
+}
+
+/**
+ * Validate handler for the page content type menu link.
+ */
+function mlh_base_menu_link_sync_validate($form, &$form_state) {
+  // Field menu item to sync. 
+  // @fixme Change field_menu_link_text to the name of the new field.
+  $language = $form['language']['#value'];
+  $field_menu_link_title = $form_state['values']['field_menu_link_text'][$language][0]['value'];
+  $actual_menu_link_title = $form_state['values']['menu']['link_title'];
+  if ($field_menu_link_title != $actual_menu_link_title) {
+    drupal_set_message(t("The menu link title in the node's custom field (!field_menu_link_title) does not match the actual menu link title (!actual_menu_link_title). Re-edit the content if you want these to be the same.", array('!field_menu_link_title' => $field_menu_link_title, '!actual_menu_link_title' => $actual_menu_link_title)));
+  }
+}
