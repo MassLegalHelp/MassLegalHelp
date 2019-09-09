@@ -355,3 +355,76 @@ function _mlh_base_get_menu_block_config() {
   }
   return $config;
 }
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function mlh_base_form_page_node_form_alter(&$form, &$form_state, $form_id) {
+  $node = $form['#node'];
+  $language = mlh_base_get_menu_link_language($form);
+  // Default the menu options only if this is new page content or there is a
+  // value in the menu field.
+  if (empty($node->nid) || !empty($node->field_menu_title[$language][0]['value'])) {
+    // Default menu area to open and menu checkbox to enabled.
+    $form['menu']['#collapsed'] = FALSE;
+    $form['menu']['enabled']['#default_value'] = TRUE;
+
+    // Trick the entity_translation_i18n_menu module to show the menu
+    // translation checkbox and default it to enabled.
+    if (!isset($node->source_menu['menu_name']) && empty($node->menu['link_title'])) {
+      $form['#node']->source_menu['menu_name'] = 'main-menu';
+      $form['#node']->source_menu['language'] = 'en';
+      entity_translation_i18n_menu_form($form, $form_state);
+    }
+  }
+
+  // Note: This code is optional and could be removed if desired.
+  // Add custom validate function to check the field_menu_title field.
+  array_unshift($form['#validate'], 'mlh_base_menu_link_sync_validate');
+}
+
+/**
+ * Validate handler for the page content type menu link.
+ *
+ * Note: This code is optional and could be removed if desired. Validate the
+ * actual menu link title with the field that should have the same information.
+ * This is to make translation easier for language-specific menus.
+ */
+function mlh_base_menu_link_sync_validate(&$form, &$form_state) {
+  if (isset($form['field_menu_title'])) {
+    $language = mlh_base_get_menu_link_language($form);
+
+    // Actual menu item value.
+    $actual_menu_link_title = $form_state['values']['menu']['link_title'];
+    // Field menu item value to sync with actual menu item. 
+    $field_menu_link_title = $form_state['values']['field_menu_title'][$language][0]['value'];
+    // Only fill in the field value if it is empty.
+    if (empty($field_menu_link_title) && !empty($actual_menu_link_title)) {
+      $form_state['values']['field_menu_title'][$language][0]['value']  = $actual_menu_link_title;
+    }
+    // Only fill in the menu value if it is empty.
+    elseif (!empty($field_menu_link_title) && empty($actual_menu_link_title)) {
+      $form_state['values']['menu']['link_title']  = $field_menu_link_title;
+    }
+    // If the values differ, show a message rather than set a form error.
+    elseif ($field_menu_link_title != $actual_menu_link_title) {
+      drupal_set_message(t('The value in the field_menu_title field ("!field_menu_link_title") does not match the value in the actual menu link ("!actual_menu_link_title"). It is recommended that you re-edit this content and make these both the same value.', array('!field_menu_link_title' => $field_menu_link_title, '!actual_menu_link_title' => $actual_menu_link_title)));
+    }
+  }
+}
+
+/**
+ * This is a very crude way to figure out the language of the menu form
+ * field. It will be LANGUAGE_NONE before the node is created. For the 
+ * translation edit forms, it will be the translation language. There
+ * is probably a better way to get the language in all situations.
+ */
+function mlh_base_get_menu_link_language($form) {
+  $language = LANGUAGE_NONE;
+  foreach ($form['field_menu_title'] as $key => $value) {
+    if (strpos($key, '#') === FALSE) {
+      $language = $key;
+    }
+  }
+  return $language;
+}
