@@ -408,7 +408,7 @@ function mlh_base_menu_link_sync_validate(&$form, &$form_state) {
     }
     // If the values differ, show a message rather than set a form error.
     elseif ($field_menu_link_title != $actual_menu_link_title) {
-      drupal_set_message(t('The value in the field_menu_title field ("!field_menu_link_title") does not match the value in the actual menu link ("!actual_menu_link_title"). It is recommended that you re-edit this content and make these both the same value.', array('!field_menu_link_title' => $field_menu_link_title, '!actual_menu_link_title' => $actual_menu_link_title)));
+      drupal_set_message(t('The value in the field_menu_title field ("!field_menu_link_title") does not match the value in the actual menu link ("!actual_menu_link_title"). It is recommended that you re-edit this content and make these both the same value.', array('!field_menu_link_title' => $field_menu_link_title, '!actual_menu_link_title' => $actual_menu_link_title)), 'warning');
     }
   }
 }
