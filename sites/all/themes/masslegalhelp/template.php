@@ -200,3 +200,15 @@ function masslegalhelp_preprocess_block(&$variables, $hook) {
 }
 // */
 
+/**
+* 9/23/2019 - Changes the core search form submit button text to "GO".
+*/
+function masslegalhelp_form_search_block_form_alter(&$form, &$form_state, $form_id) {
+    $form['search_block_form']['#title'] = t('Search'); // Change the text on the label element
+    $form['search_block_form']['#title_display'] = 'invisible'; // Toggle label visibilty
+    $form['search_block_form']['#size'] = 30;  // define size of the textfield    
+    $form['actions']['submit']['#value'] = t('GO'); // Change the text on the submit button
+
+    // Prevent user from searching the default text
+    $form['#attributes']['onsubmit'] = "if(this.search_block_form.value=='Search'){ alert('Please enter a search'); return false; }";
+} 

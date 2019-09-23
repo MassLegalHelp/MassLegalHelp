@@ -386,7 +386,7 @@ body.front .node-promoted ul.links,
 body.front .node-promoted .node-title{display:none;}
 
 .content-bottom #block-search-form .block-title{
-	/*margin:10px 5px 5px 15px; fix for front page 8/2019*/
+	margin:10px 5px 5px 15px; 
 	font-size:1em;
 	color:#666666;
 	line-height: normal;
@@ -397,7 +397,7 @@ body.front .node-promoted .node-title{display:none;}
 }
 .content-bottom #block-search-form input.form-text{
 	border:#a9a9a9 1px solid;
-	width:200px; /* was 115px; fix for front page 8/2019*/
+	width:115px; 
 	height:21px;
 }
 .content-bottom #block-search-form input.form-submit{
@@ -2165,9 +2165,14 @@ text-decoration: none;
 	-webkit-padding-start: 40px; /* for chrome */
 }
 
-/* 8/2019 - fix the cse search box in the header, code from Kristen */
+/* 8/2019 - fix the cse search box, code from Kristen */
 .block-google-cse .form-item {
   margin: 0;
   float: left;
   background: url("https://www.google.com/cse/intl/en/images/google_custom_search_watermark.gif") left center no-repeat rgb(255, 255, 255);
+}
+
+/* 9/23/2019 - fix front page search box */
+.content-bottom #block-google-cse-google-cse {
+	padding: 0;
 }
