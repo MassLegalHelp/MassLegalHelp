@@ -35,7 +35,10 @@ function masslegalhelp_preprocess_page(&$vars){
 			
 		}
 	}
-  
+  // 10/23/2019 remove "there is currently no content classified with this term" message from taxonomy term pages. This is needed for our Glossary terms.
+	if(isset($vars['page']['content']['system_main']['no_content'])) {
+		unset($vars['page']['content']['system_main']['no_content']);
+	}
 }
 
 function masslegalhelp_print_url_list($vars) {
