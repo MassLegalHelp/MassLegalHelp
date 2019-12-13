@@ -2176,3 +2176,18 @@ text-decoration: none;
 .content-bottom #block-google-cse-google-cse {
 	padding: 0;
 }
+
+/* 12/12/2019 - add 2 checklist styles */
+ul.checklist {
+list-style-image: url(../images/checklist.gif);
+list-style-type: disc;
+padding: 0px 0px 0px 15px;
+margin: 0px 0px 0px 15px;
+}
+
+ul.checklist-fun {
+list-style-image: url(../images/checklist_fun.png);
+list-style-type: disc;
+padding: 0px 0px 0px 15px;
+margin: 0px 0px 0px 15px;
+}
