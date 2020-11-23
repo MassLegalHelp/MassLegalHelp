@@ -1,14 +1,6 @@
 # Ignore configuration files that may contain sensitive information.
 sites/*/settings*.php
-error_log
 
 # Ignore paths that contain user-generated content.
 sites/*/files
 sites/*/private
-
-# Ignore cache
-cache/
-
-# Ignore verification files from comodo
-5F53878DB12896BE50BD115DC9ADA0F4.txt
-BF83FC2A8F1D6AD9AE250C3FBB17CECA.txt
