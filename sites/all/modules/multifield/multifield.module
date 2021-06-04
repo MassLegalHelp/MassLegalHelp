@@ -102,7 +102,7 @@ function multifield_entity_info() {
     'controller class' => 'MultifieldEntityController',
     'base table' => 'multifield',
     'fieldable' => TRUE,
-    // Mark this as a configuratoin entity type to prevent other modules from
+    // Mark this as a configuration entity type to prevent other modules from
     // assuming they can do stuff with this entity type.
     'configuration' => TRUE,
     'bundle keys' => array(
@@ -183,26 +183,12 @@ function multifield_delete($multifield) {
   multifield_cache_clear();
 }
 
-/**
- * Implements hook_multifield_delete() on behalf of field module.
- */
-function field_multifield_delete($multifield) {
-  // Any fields created from this multifield must also be deleted.
-  $fields = field_read_fields(array('type' => $multifield->machine_name), array('include_inactive' => TRUE));
-  foreach ($fields as $field) {
-    field_delete_field($field['field_name']);
-  }
-}
-
 function multifield_cache_clear() {
   field_info_cache_clear();
   drupal_static_reset('multifield_get_fields');
   drupal_static_reset('multifield_get_subfields');
   ctools_include('export');
   ctools_export_load_object_reset('multifield');
-  if (module_exists('field_ui')) {
-    variable_set('menu_rebuild_needed', TRUE);
-  }
 }
 
 function multifield_field_machine_name_exists($name) {
@@ -666,6 +652,59 @@ function _multifield_warn_no_subfields($field) {
       drupal_set_message(t('This multifield does not have any subfields yet. Go to the <a href="@subfields">manage subfields page</a> to add some.', array(
         '@subfields' => url('admin/structure/multifield/manage/' . $machine_name . '/fields'),
       )), 'error', FALSE);
+    }
+  }
+}
+
+/**
+ * Run all of a given entity multifields' values through an entity hook.
+ *
+ * The hook will be called with the following two parameters:
+ * 1. 'multifield' as the entity type
+ * 2. The pseudo-entity representing the multifield item value.
+ *
+ * @param string $entity_type
+ *   The entity type.
+ * @param object $entity
+ *   The entity.
+ * @param string $hook
+ *   The entity hook to invoke.
+ *
+ * @throws \EntityMalformedException
+ */
+function _multifield_entity_multifields_pseudo_entities_module_invoke($entity_type, $entity, $hook) {
+  // It should not be possible to have multifields on a multifield entity
+  // itself, so abort.
+  if ($entity_type == 'multifield') {
+    return;
+  }
+
+  list(, , $bundle) = entity_extract_ids($entity_type, $entity);
+  $multifields = multifield_get_fields();
+  $instances = array_intersect_key(field_info_instances($entity_type, $bundle), $multifields);
+  foreach (array_keys($instances) as $field_name) {
+    $machine_name = $multifields[$field_name];
+    if (!empty($entity->{$field_name})) {
+      foreach ($entity->{$field_name} as $langcode => &$items) {
+        // Gather the original field values from the parent entity if it has them.
+        $original_items = !empty($entity->original->{$field_name}[$langcode]) ? $entity->original->{$field_name}[$langcode] : array();
+
+        foreach ($items as $delta => &$item) {
+          $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
+
+          // Add the original item value to the pseudo-entity.
+          if (!empty($original_items[$delta])) {
+            $pseudo_entity->original = _multifield_field_item_to_entity($machine_name, $original_items[$delta]);
+          }
+
+          // Invoke the hook.
+          module_invoke_all($hook, 'multifield', $pseudo_entity);
+
+          // Serialize the item value back.
+          unset($pseudo_entity->original);
+          $item = _multifield_field_entity_to_item($pseudo_entity);
+        }
+      }
     }
   }
 }

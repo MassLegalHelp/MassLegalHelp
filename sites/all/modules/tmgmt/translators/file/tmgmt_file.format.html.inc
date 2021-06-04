@@ -25,10 +25,9 @@ class TMGMTFileFormatHTML implements TMGMTFileFormatInterface {
   /**
    * {@inheritdoc}
    */
-  public function export(TMGMTJob $job) {
-
+  public function export(TMGMTJob $job, $conditions = array()) {
     $items = array();
-    foreach ($job->getItems() as $item) {
+    foreach ($job->getItems($conditions) as $item) {
       $data = array_filter(tmgmt_flatten_data($item->getData()), '_tmgmt_filter_data');
       foreach ($data as $key => $value) {
         $items[$item->tjiid][$this->encodeIdSafeBase64($item->tjiid . '][' . $key)] = $value;
@@ -45,51 +44,24 @@ class TMGMTFileFormatHTML implements TMGMTFileFormatInterface {
   /**
    * {@inheritdoc}
    */
-  public function import($imported_file) {
-   $dom = new DOMDocument();
-
+  public function import($imported_file, $is_file = TRUE) {
+    $dom = new DOMDocument();
     $dom->loadHTMLFile($imported_file);
-
     $xml = simplexml_import_dom($dom);
 
     $data = array();
-
     foreach ($xml->xpath("//div[@class='atom']") as $atom) {
-
       // Assets are our strings (eq fields in nodes).
-
       $key = $this->decodeIdSafeBase64((string) $atom['id']);
-
-      // This is for plain text.
-
-      $content = (string) $atom;
-
-      foreach ($atom->children() as $child) {
-
-        // This is for HTML.
-
-        $content .= $child->asXML();
-
-      }
-
-      // Get rid of some Windows characters.
-
-      $content = str_replace('&#13;', '', $content);
-
-      $content = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $content);
-
-      $data[$key]['#text'] = $content;
-
+      $data[$key]['#text'] = (string) $atom;
     }
-
     return tmgmt_unflatten_data($data);
   }
 
   /**
-   *
-   * @param type $imported_file
+   * {@inheritdoc}
    */
-  public function validateImport($imported_file) {
+  public function validateImport($imported_file, $is_file = TRUE) {
     $dom = new DOMDocument();
     if (!$dom->loadHTMLFile($imported_file)) {
       return FALSE;
@@ -110,11 +82,13 @@ class TMGMTFileFormatHTML implements TMGMTFileFormatInterface {
       }
     }
 
-    // Attempt to load job.
+    // Attempt to load the job.
     if (!$job = tmgmt_job_load($meta['JobID'])) {
+      drupal_set_message(t('The imported file job id @file_tjid is not available.', array(
+        '@file_tjid' => $job->tjid,
+      )), 'error');
       return FALSE;
     }
-
 
     // Check language.
     if ($meta['languageSource'] != $job->getTranslator()->mapToRemoteLanguage($job->source_language) ||

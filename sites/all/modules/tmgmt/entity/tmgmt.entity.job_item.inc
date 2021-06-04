@@ -627,10 +627,6 @@ class TMGMTJobItem extends Entity {
           '#translation' => $translation,
           '#status' => TMGMT_DATA_ITEM_STATE_TRANSLATED,
         );
-        if(!empty($values['#translation']['#text'])) {
-          // If the text contains HTML entities, decode them to have proper HTML back in the content.
-          $values['#translation']['#text'] = filter_xss_admin(html_entity_decode($values['#translation']['#text']));
-        }
         $this->updateData($key, $values);
       }
       return;

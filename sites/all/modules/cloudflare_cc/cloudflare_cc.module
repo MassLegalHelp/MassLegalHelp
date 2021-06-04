@@ -31,6 +31,10 @@ function cloudflare_cc_permission(){
       'title' => t('Administer Cloudflare Settings'),
       'restrict access' => TRUE,
     ),
+    'cloudflare cc view display message' => array(
+      'title' => t('View Cloudflare Success or Failure Message'),
+      'description' => t('Upon success or failure, allow this user to see the resulting system message.'),
+    ),
   );
 }
 
@@ -64,6 +68,20 @@ function cloudflare_cc_settings_form(){
     '#required' => TRUE,
   );
 
+	$form['cloudflare_cc_display_message'] = array(
+		'#type' => 'checkbox',
+		'#title' => t('Display a system message after a Cloudflare cache clearing attempt.'),
+		'#default_value' => variable_get('cloudflare_cc_display_message', 1),
+		'#required' => FALSE,
+  );
+
+  $form['cloudflare_cc_watchdog_message'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Record to the watchdog log after a Cloudflare cache clearing attempt.'),
+    '#default_value' => variable_get('cloudflare_cc_watchdog_message', 1),
+    '#required' => FALSE,
+  );
+
   return system_settings_form($form);
 }
 
@@ -71,7 +89,7 @@ function cloudflare_cc_settings_form(){
  * Implements hook_form_submit().
  */
 function cloudflare_cc_settings_form_submit($form, &$form_state){
-  
+
 }
 
 /**
@@ -92,13 +110,22 @@ function cloudflare_cc_clear_cache(){
 
   $result = json_decode($response->data);
   if(isset($result->success) && $result->success == TRUE){
-    drupal_set_message(t('Cloudflare Cache Cleared Successfully.'));
-    watchdog('cloudflare_cc', 'Cloudflare Cache Cleared Successfully', array(), WATCHDOG_INFO);
+		if(variable_get('cloudflare_cc_display_message', 1) == 1 && user_access('cloudflare cc view display message')) {
+			drupal_set_message(t('Cloudflare Cache Cleared Successfully.'));
+		}
+    if(variable_get('cloudflare_cc_watchdog_message', 1)) {
+      watchdog('cloudflare_cc', 'Cloudflare Cache Cleared Successfully', array(), WATCHDOG_INFO);
+    }
   }else{
-    drupal_set_message(t('Cloudflare Cache not cleared.'), 'error');
-    watchdog('cloudflare_cc', 'Cloudflare Cache not cleared. <pre>@result</pre>', array(
-      '@result' => print_r($result, 1),
-    ), WATCHDOG_ERROR);
+		if(variable_get('cloudflare_cc_display_message', 1) == 1 && user_access('cloudflare cc view display message')) {
+			drupal_set_message(t('Cloudflare Cache not cleared.'), 'error');
+		}
+
+    if(variable_get('cloudflare_cc_watchdog_message', 1)) {
+      watchdog('cloudflare_cc', 'Cloudflare Cache not cleared. <pre>@result</pre>', array(
+        '@result' => print_r($result, 1),
+      ), WATCHDOG_ERROR);
+    }
   }
 }
 
