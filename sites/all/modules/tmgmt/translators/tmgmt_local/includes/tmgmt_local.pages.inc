@@ -301,7 +301,6 @@ function tmgmt_local_translation_form_element($data, TMGMTLocalTaskItem $item, &
         '#title' => $source_language->name,
         '#value' => $data[$key]['#text'],
         '#disabled' => TRUE,
-        '#allow_focus' => TRUE,
       );
 
       $form[$target_key]['translation'] = array(
