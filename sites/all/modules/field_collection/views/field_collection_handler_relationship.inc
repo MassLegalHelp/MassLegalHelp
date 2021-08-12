@@ -4,7 +4,6 @@
  * @file
  * Provide relationship handler for field collection fields.
  */
-
 class field_collection_handler_relationship extends views_handler_relationship {
 
   function option_definition() {
@@ -56,5 +55,4 @@ class field_collection_handler_relationship extends views_handler_relationship {
     }
     return $this->table_alias;
   }
-
 }

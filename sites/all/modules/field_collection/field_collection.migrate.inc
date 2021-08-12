@@ -25,11 +25,6 @@
  * @see http://drupal.org/node/1900640
  */
 
-// Avoid issues when migrate module is disabled.
-if (!class_exists('MigrateDestinationEntity')) {
-  return;
-}
-
 /**
  * Destination class implementing migration into field_collection.
  */
@@ -41,7 +36,7 @@ class MigrateDestinationFieldCollection extends MigrateDestinationEntity {
    */
   protected $hostEntityType;
 
-  public static function getKeySchema() {
+  static public function getKeySchema() {
     return array(
       'item_id' => array(
         'type' => 'int',
@@ -83,13 +78,13 @@ class MigrateDestinationFieldCollection extends MigrateDestinationEntity {
   /**
    * Import a single field collection item.
    *
-   * @param \stdClass $collection
+   * @param $collection
    *   Collection object to build. Pre-filled with any fields mapped in the
    *   migration.
-   * @param \stdClass $row
+   * @param $row
    *   Raw source data object - passed through to prepare/complete handlers.
    *
-   * @return array|bool
+   * @return array|false
    *   Array of key fields (item_id only in this case) of the collection that
    *   was saved or FALSE on failure.
    */
@@ -98,10 +93,8 @@ class MigrateDestinationFieldCollection extends MigrateDestinationEntity {
     if (isset($row->migrate_map_destid1)) {
       // We're updated an existing entity - start from the previous data.
       // entity_load() returns an array, so we get the field collection entity
-      // with reset().
-      $result = entity_load('field_collection_item', array($row->migrate_map_destid1), array(), TRUE);
-      $entity = reset($result);
-      if ($entity) {
+      // with array_shift().
+      if ($entity = array_shift(entity_load('field_collection_item', array($row->migrate_map_destid1), array(), TRUE))) {
         $entity_old = clone $entity;
         $updating = TRUE;
       }
@@ -133,14 +126,13 @@ class MigrateDestinationFieldCollection extends MigrateDestinationEntity {
 
     $this->prepare($entity, $row);
 
-    // Restore fields from original field_collection_item if updating.
+    // Restore fields from original field_collection_item if updating
     if ($updating) {
       foreach ($entity as $field => $value) {
         if ('field_' != substr($field, 0, 6)) {
           continue;
         }
-
-        if (property_exists($entity_old, $field) && !property_exists($collection, $field)) {
+        elseif (property_exists($entity_old, $field) && !property_exists($collection, $field)) {
           $entity->$field = $entity_old->$field;
         }
       }
@@ -150,7 +142,7 @@ class MigrateDestinationFieldCollection extends MigrateDestinationEntity {
     $status = entity_save('field_collection_item', $entity);
     migrate_instrument_stop('field_collection_save');
 
-    if ($status !== FALSE || in_array($this->hostEntityType, array('node', 'field_collection_item'))) {
+    if (in_array($this->hostEntityType, array('node', 'field_collection_item')) || ($status !== FALSE)) {
       $this->complete($entity, $row);
       if ($updating) {
         $this->numUpdated++;
@@ -160,8 +152,9 @@ class MigrateDestinationFieldCollection extends MigrateDestinationEntity {
       }
       return array($entity->item_id);
     }
-
-    return FALSE;
+    else {
+      return FALSE;
+    }
   }
 
   /**
@@ -184,14 +177,14 @@ class MigrateDestinationFieldCollection extends MigrateDestinationEntity {
     $this->completeRollback($item_id);
     return TRUE;
   }
-
 }
 
 /**
  * Implements migrate hook_migrate_api().
  */
 function field_collection_migrate_api() {
-  return array(
+  $api = array(
     'api' => 2,
   );
+  return $api;
 }

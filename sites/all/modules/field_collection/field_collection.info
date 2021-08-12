@@ -1,4 +1,4 @@
-name = Field Collection
+name = Field collection
 description = Provides a field collection field, to which any number of fields can be attached.
 core = 7.x
 dependencies[] = entity
@@ -12,8 +12,9 @@ files[] = field_collection.migrate.inc
 configure = admin/structure/field-collections
 package = Fields
 
-; Information added by Drupal.org packaging script on 2020-12-26
+; Information added by Drupal.org packaging script on 2016-02-01
 version = "7.x-1.2"
 core = "7.x"
 project = "field_collection"
-datestamp = "1609006493"
+datestamp = "1454338759" 
+

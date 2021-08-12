@@ -29,7 +29,7 @@ class EntityTranslationFieldCollectionItemHandler extends EntityTranslationDefau
    * {@inheritdoc}
    */
   public function getAccess($op) {
-    return entity_access($op, 'field_collection_item', $this->entity);
+    return field_collection_item_access($op, $this->entity);
   }
 
   /**
@@ -42,14 +42,14 @@ class EntityTranslationFieldCollectionItemHandler extends EntityTranslationDefau
     // language.
     if (($host_entity_type = $this->entity->hostEntityType()) && entity_translation_enabled($host_entity_type) && ($host_entity = $this->entity->hostEntity())) {
       $handler = $this->factory->getHandler($host_entity_type, $host_entity);
-      $langcode = $handler->getLanguage();
+      $langcode = $handler->getFormLanguage();
     }
     // If the host entity is not translatable, use the default language
-    // fallback.
+   // fallback.
     else {
       $langcode = parent::getLanguage();
     }
-    return $langcode;
+   return $langcode;
   }
 
 }
